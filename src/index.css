@@ -26,29 +26,29 @@
 
 /* Glassmorphism & High-Contrast Cards */
 .glass-panel {
-  background: rgba(8, 15, 30, 0.78);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.15);
+  background: rgba(8, 15, 30, 0.82);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.65), inset 0 1px 0 rgba(255, 255, 255, 0.18);
 }
 
 .glass-panel-glow {
-  background: rgba(6, 12, 26, 0.85);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border: 1px solid rgba(56, 189, 248, 0.3);
-  box-shadow: 0 0 35px rgba(56, 189, 248, 0.15), 0 25px 50px rgba(0, 0, 0, 0.7), inset 0 1px 0 rgba(255, 255, 255, 0.2);
+  background: rgba(6, 13, 28, 0.88);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border: 1px solid rgba(56, 189, 248, 0.35);
+  box-shadow: 0 0 40px rgba(56, 189, 248, 0.18), 0 25px 60px rgba(0, 0, 0, 0.75), inset 0 1px 0 rgba(255, 255, 255, 0.22);
 }
 
 .glass-badge {
-  background: rgba(15, 23, 42, 0.7);
-  backdrop-filter: blur(8px);
-  border: 1px solid rgba(255, 255, 255, 0.15);
+  background: rgba(15, 23, 42, 0.75);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.16);
 }
 
 .aurora-text-gradient {
-  background: linear-gradient(135deg, #a7f3d0 0%, #38bdf8 50%, #c084fc 100%);
+  background: linear-gradient(135deg, #a7f3d0 0%, #38bdf8 45%, #c084fc 80%, #f472b6 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
 }
@@ -59,7 +59,7 @@
   -webkit-text-fill-color: transparent;
 }
 
-/* Custom Scrollbars for modal content */
+/* Custom Scrollbars */
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;
@@ -71,15 +71,15 @@
 }
 
 ::-webkit-scrollbar-thumb {
-  background: rgba(56, 189, 248, 0.4);
+  background: rgba(56, 189, 248, 0.45);
   border-radius: 9999px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(56, 189, 248, 0.7);
+  background: rgba(56, 189, 248, 0.75);
 }
 
-/* Pulse Beacon Animation */
+/* Beacon Pulse Animation */
 @keyframes beaconPulse {
   0% {
     transform: scale(0.95);
@@ -87,7 +87,7 @@
   }
   70% {
     transform: scale(1.05);
-    box-shadow: 0 0 0 15px rgba(56, 189, 248, 0);
+    box-shadow: 0 0 0 16px rgba(56, 189, 248, 0);
   }
   100% {
     transform: scale(0.95);
@@ -96,7 +96,7 @@
 }
 
 .pulse-beacon {
-  animation: beaconPulse 2.5s infinite cubic-bezier(0.4, 0, 0.6, 1);
+  animation: beaconPulse 2.4s infinite cubic-bezier(0.4, 0, 0.6, 1);
 }
 
 @keyframes floatSlow {
@@ -106,4 +106,13 @@
 
 .animate-float {
   animation: floatSlow 4s ease-in-out infinite;
+}
+
+@keyframes spinSlow {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.animate-spin-slow {
+  animation: spinSlow 20s linear infinite;
 }
