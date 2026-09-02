@@ -1,6 +1,5 @@
 import React from 'react';
-import { Volume2, VolumeX, Compass, MapPin, Layers, Tent, Eye, Radio, Navigation, ChevronUp, ChevronDown } from 'lucide-react';
-import { audioEngine } from '../../audio/AudioEngine';
+import { Volume2, VolumeX, Compass, MapPin, Layers, Tent, Eye, Radio, Navigation } from 'lucide-react';
 
 interface HUDControlsProps {
   scrollProgress: number;
@@ -19,10 +18,10 @@ export const HUDControls: React.FC<HUDControlsProps> = ({
   activeCheckpoint,
   onOpenCheckpointModal,
 }) => {
-  // Calculate dynamic elevation based on scroll progress (120m -> 4,810m)
+  // Elevation calculation (120m -> 4,810m Summit)
   const currentElevation = Math.round(120 + scrollProgress * 4690);
   
-  // Calculate Arctic Coordinates
+  // Real-time coordinates
   const latProgress = (25.2048 + scrollProgress * (78.2232 - 25.2048)).toFixed(2);
   const longProgress = (55.2708 - scrollProgress * (55.2708 - 15.6267)).toFixed(2);
 
@@ -36,23 +35,23 @@ export const HUDControls: React.FC<HUDControlsProps> = ({
 
   return (
     <>
-      {/* Top Header HUD Bar */}
+      {/* Top Header HUD Bar (Monoio Style) */}
       <header className="fixed top-0 left-0 right-0 z-30 p-3 sm:p-5 flex items-center justify-between pointer-events-none">
         
         {/* Left: Compass & Elevation Tracker */}
         <div className="flex items-center gap-2 sm:gap-3 pointer-events-auto">
-          <div className="glass-panel px-3 sm:px-4 py-2 rounded-2xl flex items-center gap-2.5 sm:gap-3 text-xs font-mono text-slate-200 border border-sky-500/20 shadow-lg">
+          <div className="glass-panel px-3.5 sm:px-4 py-2 rounded-full flex items-center gap-2.5 text-xs font-mono text-slate-200 border border-white/10 shadow-xl">
             <Compass className="w-4 h-4 text-sky-400 animate-spin-slow" />
-            <div className="flex flex-col sm:flex-row sm:items-center sm:gap-2">
-              <span className="font-bold text-white tracking-wider">ALT {currentElevation}m</span>
-              <span className="hidden sm:inline text-slate-500">•</span>
+            <div className="flex items-center gap-2 tracking-[0.16em]">
+              <span className="font-bold text-white">ALT {currentElevation}m</span>
+              <span className="text-slate-600">•</span>
               <span className="hidden md:inline text-sky-300/80">{latProgress}°N, {longProgress}°E</span>
             </div>
           </div>
         </div>
 
-        {/* Center: Checkpoint Quick Jump Buttons (Desktop) */}
-        <nav className="hidden lg:flex items-center gap-1.5 glass-panel px-3 py-1.5 rounded-full border border-sky-500/20 pointer-events-auto shadow-lg">
+        {/* Center: Checkpoint Quick Navigation (Desktop) */}
+        <nav className="hidden lg:flex items-center gap-1.5 glass-panel px-3 py-1.5 rounded-full border border-white/10 pointer-events-auto shadow-xl">
           {checkpoints.map((cp) => {
             const Icon = cp.icon;
             const isNear = Math.abs(scrollProgress - cp.p) < 0.12;
@@ -63,10 +62,10 @@ export const HUDControls: React.FC<HUDControlsProps> = ({
                   onJumpToProgress(cp.p);
                   if (cp.id > 0) onOpenCheckpointModal(cp.id);
                 }}
-                className={`px-3 py-1.5 rounded-full text-xs font-mono font-medium flex items-center gap-1.5 transition-all ${
+                className={`px-3.5 py-1.5 rounded-full text-xs font-mono tracking-[0.14em] font-medium flex items-center gap-1.5 transition-all ${
                   isNear
-                    ? 'bg-sky-500/25 border border-sky-400 text-white shadow-sm'
-                    : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/50'
+                    ? 'bg-sky-500/20 border border-sky-400 text-white shadow-sm'
+                    : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/40'
                 }`}
               >
                 <Icon className="w-3.5 h-3.5" />
@@ -76,14 +75,14 @@ export const HUDControls: React.FC<HUDControlsProps> = ({
           })}
         </nav>
 
-        {/* Right: Audio Sound Design Toggle & Status */}
+        {/* Right: Audio Sound Design Toggle */}
         <div className="flex items-center gap-2 pointer-events-auto">
           <button
             onClick={onToggleSound}
-            className={`glass-panel p-2.5 sm:px-3.5 sm:py-2 rounded-2xl flex items-center gap-2 text-xs font-mono transition-all border ${
+            className={`glass-panel p-2.5 sm:px-4 sm:py-2 rounded-full flex items-center gap-2 text-xs font-mono tracking-[0.16em] transition-all border ${
               !isMuted
-                ? 'border-emerald-400/40 text-emerald-300 bg-emerald-950/30'
-                : 'border-slate-700/60 text-slate-400 hover:text-slate-200'
+                ? 'border-emerald-400/40 text-emerald-300 bg-emerald-950/30 shadow-lg shadow-emerald-950/40'
+                : 'border-white/10 text-slate-400 hover:text-slate-200'
             }`}
             title={isMuted ? 'Unmute Arctic Atmosphere' : 'Mute Audio'}
           >
@@ -93,16 +92,16 @@ export const HUDControls: React.FC<HUDControlsProps> = ({
         </div>
       </header>
 
-      {/* Floating Checkpoint Trigger Beacon on Left Screen when passing checkpoints */}
+      {/* Floating Checkpoint Trigger Beacon on Left Screen */}
       {activeCheckpoint && activeCheckpoint > 0 && (
         <div className="fixed left-6 bottom-24 z-20 pointer-events-auto animate-in slide-in-from-left duration-300">
           <button
             onClick={() => onOpenCheckpointModal(activeCheckpoint)}
-            className="group flex items-center gap-3 glass-panel-glow px-4 py-3 rounded-2xl border border-sky-400 text-white shadow-xl hover:scale-105 transition-all"
+            className="group flex items-center gap-3 glass-panel-glow px-4 py-3 rounded-2xl border border-sky-400 text-white shadow-2xl hover:scale-105 transition-all"
           >
             <span className="w-3 h-3 rounded-full bg-sky-400 animate-ping" />
             <div className="text-left">
-              <p className="text-[10px] font-mono uppercase tracking-wider text-sky-400 font-bold">
+              <p className="text-[10px] font-mono uppercase tracking-[0.2em] text-sky-400 font-bold">
                 Checkpoint {activeCheckpoint} Active
               </p>
               <p className="text-xs font-bold text-white">
@@ -118,9 +117,9 @@ export const HUDControls: React.FC<HUDControlsProps> = ({
 
       {/* Bottom Scrollytelling Progress Bar */}
       <footer className="fixed bottom-0 left-0 right-0 z-30 p-4 sm:p-6 pointer-events-none flex flex-col items-center">
-        <div className="w-full max-w-2xl glass-panel p-3 rounded-2xl border border-sky-500/20 shadow-2xl pointer-events-auto space-y-2">
+        <div className="w-full max-w-2xl glass-panel p-3 rounded-2xl border border-white/10 shadow-2xl pointer-events-auto space-y-2">
           
-          <div className="flex items-center justify-between text-[11px] font-mono text-slate-300">
+          <div className="flex items-center justify-between text-[11px] font-mono tracking-[0.16em] text-slate-300">
             <span className="flex items-center gap-1.5">
               <MapPin className="w-3.5 h-3.5 text-sky-400" />
               <span>Expedition Progress</span>
@@ -144,7 +143,7 @@ export const HUDControls: React.FC<HUDControlsProps> = ({
           </div>
 
           {/* Checkpoint Markers on Progress Bar */}
-          <div className="flex justify-between items-center px-1 text-[10px] font-mono text-slate-400">
+          <div className="flex justify-between items-center px-1 text-[10px] font-mono tracking-[0.14em] text-slate-400">
             {checkpoints.map((cp) => (
               <button
                 key={cp.id}

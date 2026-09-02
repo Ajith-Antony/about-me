@@ -33,7 +33,6 @@ export const WorldScene: React.FC<WorldSceneProps> = ({
     breathTimer: 0,
     footsteps: [] as { mesh: THREE.Mesh; age: number }[],
     breathPuffs: [] as { mesh: THREE.Mesh; vel: THREE.Vector3; life: number; maxLife: number }[],
-    sparkEmbers: [] as { mesh: THREE.Mesh; vel: THREE.Vector3; life: number }[],
     shootingStars: [] as {
       start: THREE.Vector3;
       dir: THREE.Vector3;
@@ -57,13 +56,13 @@ export const WorldScene: React.FC<WorldSceneProps> = ({
 
     // --- 1. THREE.JS ENGINE SETUP ---
     const scene = new THREE.Scene();
-    scene.fog = new THREE.FogExp2(0x030712, 0.022);
+    scene.fog = new THREE.FogExp2(0x030611, 0.02);
 
     const camera = new THREE.PerspectiveCamera(
-      50,
+      48,
       window.innerWidth / window.innerHeight,
       0.1,
-      1400
+      1500
     );
 
     const renderer = new THREE.WebGLRenderer({
@@ -76,7 +75,7 @@ export const WorldScene: React.FC<WorldSceneProps> = ({
     renderer.setSize(window.innerWidth, window.innerHeight);
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    renderer.toneMappingExposure = 1.25;
+    renderer.toneMappingExposure = 1.3;
     renderer.shadowMap.enabled = true;
     renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 
@@ -88,65 +87,75 @@ export const WorldScene: React.FC<WorldSceneProps> = ({
     const moonAlbedo = generateMoonTexture();
     const parkaTexture = generateParkaTexture();
 
-    // --- 3. TRAIL SPLINE PATH (Realistic S-Curved Mountain Ascent) ---
+    // --- 3. TRAIL SPLINE PATH (Monoio Glacial Ascent) ---
+    // Smooth CatmullRom path positioned on the right half of the frame
     const splinePoints = [
-      new THREE.Vector3(2.4, 0.0, 9.0),     // Scene 0: Trail Entrance (Hero)
-      new THREE.Vector3(1.8, 0.45, 3.8),
-      new THREE.Vector3(1.3, 1.15, -2.8),   // Checkpoint 1: Skills Signpost (25%)
-      new THREE.Vector3(0.4, 2.3, -10.2),
-      new THREE.Vector3(-0.6, 3.6, -18.2),  // Checkpoint 2: Experience Campsite (55%)
-      new THREE.Vector3(0.1, 5.1, -26.5),
-      new THREE.Vector3(1.0, 6.6, -34.8),   // Checkpoint 3: Ancient Observatory (80%)
-      new THREE.Vector3(0.4, 8.1, -42.8),
-      new THREE.Vector3(0.0, 9.4, -50.5),   // Checkpoint 4: Summit Beacon (100%)
+      new THREE.Vector3(2.6, 0.0, 9.5),     // Scene 0: Trail Entrance (Hero)
+      new THREE.Vector3(2.0, 0.45, 4.0),
+      new THREE.Vector3(1.5, 1.15, -2.5),   // Checkpoint 1: Skills Signpost (25%)
+      new THREE.Vector3(0.6, 2.3, -9.8),
+      new THREE.Vector3(-0.4, 3.6, -17.5),  // Checkpoint 2: Experience Campsite (55%)
+      new THREE.Vector3(0.3, 5.1, -25.5),
+      new THREE.Vector3(1.2, 6.6, -33.8),   // Checkpoint 3: Ancient Observatory (80%)
+      new THREE.Vector3(0.6, 8.1, -41.8),
+      new THREE.Vector3(0.1, 9.4, -49.5),   // Checkpoint 4: Summit Beacon (100%)
     ];
     const trailCurve = new THREE.CatmullRomCurve3(splinePoints, false, 'centripetal', 0.5);
 
-    // --- 4. LIGHTING & VOLUMETRICS ---
-    const ambientLight = new THREE.AmbientLight(0x0c1b33, 1.35);
+    // --- 4. LIGHTING & VOLUMETRICS (Monoio Cold Moonlight + Aurora Glow) ---
+    const ambientLight = new THREE.AmbientLight(0x060f1e, 1.4);
     scene.add(ambientLight);
 
-    const hemisphereLight = new THREE.HemisphereLight(0x244c78, 0x050a14, 1.2);
+    const hemisphereLight = new THREE.HemisphereLight(0x163456, 0x02050b, 1.3);
     scene.add(hemisphereLight);
 
-    // Stark directional moonlight with sharp realistic shadows
-    const moonLight = new THREE.DirectionalLight(0xdbeafe, 3.0);
-    moonLight.position.set(-32, 52, -40);
+    // Moonlight casting sharp realistic shadows
+    const moonLight = new THREE.DirectionalLight(0xdbeafe, 3.2);
+    moonLight.position.set(-36, 56, -42);
     moonLight.castShadow = true;
     moonLight.shadow.mapSize.width = 2048;
     moonLight.shadow.mapSize.height = 2048;
     moonLight.shadow.camera.near = 10;
-    moonLight.shadow.camera.far = 150;
-    moonLight.shadow.camera.left = -40;
-    moonLight.shadow.camera.right = 40;
-    moonLight.shadow.camera.top = 40;
-    moonLight.shadow.camera.bottom = -40;
+    moonLight.shadow.camera.far = 160;
+    moonLight.shadow.camera.left = -45;
+    moonLight.shadow.camera.right = 45;
+    moonLight.shadow.camera.top = 45;
+    moonLight.shadow.camera.bottom = -45;
     moonLight.shadow.bias = -0.0003;
     scene.add(moonLight);
 
-    // --- 5. CELESTIAL SKYBOX & VOLUMETRIC AURORA BOREALIS ---
-    // 5A. Photorealistic Moon with Crater Surface & Multi-Layer Halos
-    const moonGroup = new THREE.Group();
-    moonGroup.position.set(-32, 46, -100);
+    // Aurora Sky Ambient Point Lights (Casting green/cyan reflections onto the terrain)
+    const auroraGlowLight = new THREE.PointLight(0x00ff9d, 3.5, 90);
+    auroraGlowLight.position.set(25, 35, -25);
+    scene.add(auroraGlowLight);
 
-    const moonGeo = new THREE.SphereGeometry(5.8, 64, 64);
+    const auroraVioletLight = new THREE.PointLight(0x8b5cf6, 2.5, 80);
+    auroraVioletLight.position.set(15, 45, -45);
+    scene.add(auroraVioletLight);
+
+    // --- 5. MONOIO CELESTIAL SKYBOX & SURGING RIGHT-SIDE AURORA ---
+    // 5A. Large Photorealistic Moon with Lunar Maria & Halos
+    const moonGroup = new THREE.Group();
+    moonGroup.position.set(-35, 48, -105);
+
+    const moonGeo = new THREE.SphereGeometry(6.4, 64, 64);
     const moonMat = new THREE.MeshStandardMaterial({
       map: moonAlbedo,
-      roughness: 0.82,
+      roughness: 0.8,
       metalness: 0.08,
       emissive: 0xdbeafe,
-      emissiveIntensity: 0.55,
+      emissiveIntensity: 0.6,
     });
     const moonMesh = new THREE.Mesh(moonGeo, moonMat);
-    moonMesh.rotation.y = Math.PI * 0.2;
+    moonMesh.rotation.y = Math.PI * 0.25;
     moonGroup.add(moonMesh);
 
-    // Volumetric Lunar Corona / Halos
-    const haloGeo1 = new THREE.PlaneGeometry(38, 38);
+    // Multi-Layer Volumetric Lunar Halos
+    const haloGeo1 = new THREE.PlaneGeometry(42, 42);
     const haloMat1 = new THREE.MeshBasicMaterial({
       color: 0x93c5fd,
       transparent: true,
-      opacity: 0.48,
+      opacity: 0.52,
       blending: THREE.AdditiveBlending,
       side: THREE.DoubleSide,
       depthWrite: false,
@@ -155,11 +164,11 @@ export const WorldScene: React.FC<WorldSceneProps> = ({
     moonHalo1.position.z += 0.2;
     moonGroup.add(moonHalo1);
 
-    const haloGeo2 = new THREE.PlaneGeometry(68, 68);
+    const haloGeo2 = new THREE.PlaneGeometry(75, 75);
     const haloMat2 = new THREE.MeshBasicMaterial({
       color: 0x60a5fa,
       transparent: true,
-      opacity: 0.22,
+      opacity: 0.24,
       blending: THREE.AdditiveBlending,
       side: THREE.DoubleSide,
       depthWrite: false,
@@ -169,14 +178,15 @@ export const WorldScene: React.FC<WorldSceneProps> = ({
     moonGroup.add(moonHalo2);
     scene.add(moonGroup);
 
-    // 5B. Multi-Curtain Raymarched Volumetric Aurora Borealis
-    const auroraGeo = new THREE.CylinderGeometry(135, 135, 48, 96, 36, true);
+    // 5B. Surging Right-Side Volumetric Aurora Borealis Curtains
+    // In Monoio, the aurora dramatically tears across the upper-right hemisphere
+    const auroraGeo = new THREE.CylinderGeometry(140, 140, 52, 96, 36, true);
     const auroraUniforms = {
       uTime: { value: 0 },
-      uColor1: { value: new THREE.Color(0x05ffa1) }, // Luminous Arctic Emerald (557.7nm)
-      uColor2: { value: new THREE.Color(0x00e5ff) }, // Glacial Cyan
-      uColor3: { value: new THREE.Color(0xa855f7) }, // Deep Astral Violet (391.4nm)
-      uColor4: { value: new THREE.Color(0xf43f5e) }, // Polar Rose Top Fringe
+      uColor1: { value: new THREE.Color(0x00ff9d) }, // Luminous Arctic Emerald
+      uColor2: { value: new THREE.Color(0x00f0ff) }, // Glacial Cyan
+      uColor3: { value: new THREE.Color(0x8b5cf6) }, // Astral Violet
+      uColor4: { value: new THREE.Color(0xf43f5e) }, // Polar Rose Fringe
     };
 
     const auroraMat = new THREE.ShaderMaterial({
@@ -192,10 +202,11 @@ export const WorldScene: React.FC<WorldSceneProps> = ({
           vPos = position;
           vec3 pos = position;
 
-          // Multi-harmonic magnetic field wave ripples
-          float wave1 = sin(pos.x * 0.038 + uTime * 0.72) * 5.8;
-          float wave2 = cos(pos.z * 0.048 + uTime * 0.52) * 4.8;
-          float wave3 = sin(pos.x * 0.09 + pos.z * 0.07 + uTime * 0.95) * 3.2;
+          // Asymmetric surge concentrated towards the right (+X quadrant)
+          float rightBias = smoothstep(-50.0, 80.0, pos.x);
+          float wave1 = sin(pos.x * 0.042 + uTime * 0.78) * (6.5 * (0.8 + rightBias * 0.6));
+          float wave2 = cos(pos.z * 0.052 + uTime * 0.58) * 5.2;
+          float wave3 = sin(pos.x * 0.095 + pos.z * 0.075 + uTime * 1.05) * 3.5;
 
           pos.y += wave1 + wave2 + wave3;
           vElevation = wave1 + wave2 + wave3;
@@ -213,24 +224,27 @@ export const WorldScene: React.FC<WorldSceneProps> = ({
         uniform vec3 uColor4;
 
         void main() {
-          // Vertical soft fade (top and bottom ionization boundary)
-          float vFade = smoothstep(0.0, 0.42, vUv.y) * smoothstep(1.0, 0.65, vUv.y);
+          // Vertical soft ionization boundary
+          float vFade = smoothstep(0.0, 0.4, vUv.y) * smoothstep(1.0, 0.62, vUv.y);
 
-          // Vertical striated ray filaments
-          float ray1 = sin(vPos.x * 0.11 + uTime * 0.95 + sin(vPos.z * 0.06 + uTime * 0.45) * 3.8);
-          ray1 = smoothstep(-0.25, 0.88, ray1);
+          // Striated magnetic ray curtains
+          float ray1 = sin(vPos.x * 0.12 + uTime * 1.05 + sin(vPos.z * 0.065 + uTime * 0.5) * 4.2);
+          ray1 = smoothstep(-0.2, 0.9, ray1);
 
-          float ray2 = cos(vPos.z * 0.14 - uTime * 0.8 + sin(vPos.x * 0.08 + uTime * 0.55) * 2.5);
+          float ray2 = cos(vPos.z * 0.15 - uTime * 0.85 + sin(vPos.x * 0.085 + uTime * 0.6) * 2.8);
           ray2 = smoothstep(-0.1, 0.92, ray2);
 
-          float curtain = (ray1 * 0.68 + ray2 * 0.32);
+          float curtain = (ray1 * 0.7 + ray2 * 0.3);
 
-          // Dynamic multi-wavelength emission blending
-          vec3 col = mix(uColor1, uColor2, sin(vUv.x * 6.28 + uTime * 0.32) * 0.5 + 0.5);
-          col = mix(col, uColor3, cos(vPos.z * 0.045 + uTime * 0.42) * 0.5 + 0.5);
-          col = mix(col, uColor4, clamp(vElevation * 0.16, 0.0, 1.0) * 0.45);
+          // Dynamic multi-wavelength color blend
+          vec3 col = mix(uColor1, uColor2, sin(vUv.x * 6.28 + uTime * 0.35) * 0.5 + 0.5);
+          col = mix(col, uColor3, cos(vPos.z * 0.048 + uTime * 0.45) * 0.5 + 0.5);
+          col = mix(col, uColor4, clamp(vElevation * 0.18, 0.0, 1.0) * 0.5);
 
-          float alpha = vFade * curtain * 0.68;
+          // Bias intensity towards the right of the screen
+          float intensityBias = smoothstep(-40.0, 60.0, vPos.x) * 0.4 + 0.6;
+
+          float alpha = vFade * curtain * intensityBias * 0.78;
           gl_FragColor = vec4(col, alpha);
         }
       `,
@@ -240,22 +254,22 @@ export const WorldScene: React.FC<WorldSceneProps> = ({
       depthWrite: false,
     });
     const auroraMesh = new THREE.Mesh(auroraGeo, auroraMat);
-    auroraMesh.position.set(0, 38, -38);
+    auroraMesh.position.set(18, 38, -35); // Centered towards right-upper space
     scene.add(auroraMesh);
 
-    // 5C. Deep Celestial Starfield (3,600 Astronomical Stars)
-    const starCount = 3600;
+    // 5C. Deep Celestial Starfield (3,800 Stars)
+    const starCount = 3800;
     const starGeo = new THREE.BufferGeometry();
     const starPositions = new Float32Array(starCount * 3);
     const starColors = new Float32Array(starCount * 3);
 
     for (let i = 0; i < starCount; i++) {
-      const radius = 160 + Math.random() * 100;
+      const radius = 170 + Math.random() * 110;
       const theta = Math.random() * Math.PI * 2;
       const phi = Math.acos(Math.random() * 0.88 + 0.12);
 
       const x = radius * Math.sin(phi) * Math.cos(theta);
-      const y = radius * Math.cos(phi) + 10;
+      const y = radius * Math.cos(phi) + 8;
       const z = radius * Math.sin(phi) * Math.sin(theta);
 
       starPositions[i * 3] = x;
@@ -264,20 +278,20 @@ export const WorldScene: React.FC<WorldSceneProps> = ({
 
       const temp = Math.random();
       if (temp > 0.82) {
-        starColors[i * 3] = 0.65; starColors[i * 3 + 1] = 0.85; starColors[i * 3 + 2] = 1.0; // Class O/B Blue
+        starColors[i * 3] = 0.65; starColors[i * 3 + 1] = 0.88; starColors[i * 3 + 2] = 1.0; // Class O/B Blue
       } else if (temp > 0.62) {
-        starColors[i * 3] = 1.0; starColors[i * 3 + 1] = 0.92; starColors[i * 3 + 2] = 0.72; // Class G Gold
+        starColors[i * 3] = 1.0; starColors[i * 3 + 1] = 0.94; starColors[i * 3 + 2] = 0.75; // Amber Gold
       } else if (temp > 0.45) {
         starColors[i * 3] = 0.88; starColors[i * 3 + 1] = 0.75; starColors[i * 3 + 2] = 1.0; // Violet
       } else {
-        starColors[i * 3] = 1.0; starColors[i * 3 + 1] = 1.0; starColors[i * 3 + 2] = 1.0;   // Brilliant White
+        starColors[i * 3] = 1.0; starColors[i * 3 + 1] = 1.0; starColors[i * 3 + 2] = 1.0;   // White
       }
     }
     starGeo.setAttribute('position', new THREE.BufferAttribute(starPositions, 3));
     starGeo.setAttribute('color', new THREE.BufferAttribute(starColors, 3));
 
     const starMat = new THREE.PointsMaterial({
-      size: 1.4,
+      size: 1.45,
       vertexColors: true,
       transparent: true,
       opacity: 0.95,
@@ -303,7 +317,7 @@ export const WorldScene: React.FC<WorldSceneProps> = ({
         line.visible = false;
         scene.add(line);
 
-        const headGeo = new THREE.SphereGeometry(0.18, 8, 8);
+        const headGeo = new THREE.SphereGeometry(0.2, 8, 8);
         const headMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
         const head = new THREE.Mesh(headGeo, headMat);
         head.visible = false;
@@ -313,7 +327,7 @@ export const WorldScene: React.FC<WorldSceneProps> = ({
           start: new THREE.Vector3(),
           dir: new THREE.Vector3(),
           progress: 1,
-          speed: 0.022,
+          speed: 0.024,
           active: false,
           tail: line,
           head: head,
@@ -323,8 +337,8 @@ export const WorldScene: React.FC<WorldSceneProps> = ({
     };
     initShootingStars();
 
-    // --- 6. GLACIATED MOUNTAIN HORIZON & PBR SNOW TERRAIN ---
-    // 6A. Majestic Mountain Peaks with Rock Strata & Snow Accumulation
+    // --- 6. MONOIO REFLECTIVE GLACIAL MIRROR WATER & MOUNTAIN HORIZON ---
+    // 6A. Glaciated Mountain Peaks with Rock Strata Normal Maps
     const createMountainPeak = (
       x: number,
       y: number,
@@ -334,7 +348,7 @@ export const WorldScene: React.FC<WorldSceneProps> = ({
       scaleZ: number,
       isApex = false
     ) => {
-      const geo = new THREE.ConeGeometry(scaleX, scaleY, 12, 6);
+      const geo = new THREE.ConeGeometry(scaleX, scaleY, 14, 6);
       const pos = geo.attributes.position;
       for (let i = 0; i < pos.count; i++) {
         const vy = pos.getY(i);
@@ -349,9 +363,9 @@ export const WorldScene: React.FC<WorldSceneProps> = ({
       geo.computeVertexNormals();
 
       const mat = new THREE.MeshStandardMaterial({
-        color: isApex ? 0x1e3659 : 0x14243b,
-        roughness: 0.78,
-        metalness: 0.22,
+        color: isApex ? 0x162c4a : 0x0f1c30,
+        roughness: 0.75,
+        metalness: 0.25,
         normalMap: rockNormal,
         normalScale: new THREE.Vector2(1.2, 1.2),
         flatShading: false,
@@ -367,16 +381,17 @@ export const WorldScene: React.FC<WorldSceneProps> = ({
       return mesh;
     };
 
-    createMountainPeak(0, 14, -82, 52, 75, 42, true);     // Central Apex (Summit Zenith)
-    createMountainPeak(-48, 7, -72, 42, 56, 32);         // Left Ridge
-    createMountainPeak(46, 8, -75, 44, 60, 34);          // Right Ridge
-    createMountainPeak(-26, 4, -56, 28, 38, 24);         // Mid-Left Crag
-    createMountainPeak(28, 5, -58, 30, 42, 26);          // Mid-Right Crag
-    createMountainPeak(-72, 4, -92, 50, 52, 38);         // Far Horizon Left
-    createMountainPeak(72, 5, -95, 54, 56, 40);          // Far Horizon Right
+    createMountainPeak(0, 14, -84, 54, 78, 44, true);     // Central Apex (Summit Zenith)
+    createMountainPeak(-50, 7, -74, 44, 58, 34);         // Left Ridge
+    createMountainPeak(48, 8, -78, 46, 62, 36);          // Right Ridge
+    createMountainPeak(-28, 4, -58, 30, 40, 26);         // Mid-Left Crag
+    createMountainPeak(30, 5, -60, 32, 44, 28);          // Mid-Right Crag
+    createMountainPeak(-75, 4, -95, 52, 54, 40);         // Far Horizon Left
+    createMountainPeak(75, 5, -98, 56, 58, 42);          // Far Horizon Right
 
-    // 6B. Procedural Snow Mountain Ground with PBR Snow Normal & Roughness
-    const terrainGeo = new THREE.PlaneGeometry(95, 115, 72, 72);
+    // 6B. Mirror-Sheen Glacial Water / Ice Ground (Monoio Style)
+    // High-specular reflective surface capturing the glowing aurora and moonlight
+    const terrainGeo = new THREE.PlaneGeometry(105, 125, 80, 80);
     terrainGeo.rotateX(-Math.PI / 2);
 
     const terrainPos = terrainGeo.attributes.position;
@@ -384,32 +399,31 @@ export const WorldScene: React.FC<WorldSceneProps> = ({
       const px = terrainPos.getX(i);
       const pz = terrainPos.getZ(i);
 
-      // Natural rising slope
-      const slope = (-pz + 38) * 0.138;
-      const hills = Math.sin(px * 0.15) * Math.cos(pz * 0.11) * 2.1 + Math.sin(px * 0.3 + pz * 0.16) * 1.0;
-      
-      // Carve central trail valley
-      const pathDist = Math.abs(px - (Math.sin(pz * 0.072) * 2.3));
-      const valleyFactor = Math.min(1.0, pathDist * 0.3);
+      // Smooth rise towards the mountains, leaving a mirror-flat glacial lake basin in foreground
+      const slope = Math.max(0, (-pz + 25)) * 0.145;
+      const subtleHills = Math.sin(px * 0.12) * Math.cos(pz * 0.09) * 1.6 + Math.sin(px * 0.25 + pz * 0.14) * 0.7;
 
-      terrainPos.setY(i, (slope + hills) * valleyFactor);
+      const pathDist = Math.abs(px - (Math.sin(pz * 0.068) * 2.4));
+      const valleyFactor = Math.min(1.0, pathDist * 0.28);
+
+      terrainPos.setY(i, (slope + subtleHills) * valleyFactor);
     }
     terrainGeo.computeVertexNormals();
 
     const terrainMat = new THREE.MeshStandardMaterial({
-      color: 0x142847,
-      roughness: 0.72,
-      metalness: 0.18,
+      color: 0x081526, // Deep glacial blue mirror surface
+      roughness: 0.35, // High-gloss mirror reflection (water / ice sheen)
+      metalness: 0.65,
       normalMap: snowNormal,
-      normalScale: new THREE.Vector2(0.85, 0.85),
+      normalScale: new THREE.Vector2(0.35, 0.35), // Subtle water ripples
       roughnessMap: snowRoughness,
     });
     const terrainMesh = new THREE.Mesh(terrainGeo, terrainMat);
-    terrainMesh.position.set(0, 0, -24);
+    terrainMesh.position.set(0, 0, -25);
     terrainMesh.receiveShadow = true;
     scene.add(terrainMesh);
 
-    // 6C. Winding Icy Snow Trail Ribbon
+    // 6C. Winding Glacial Ice Trail Path
     const trailRibbonGeo = new THREE.BufferGeometry();
     const trailSegments = 96;
     const trailWidth = 1.6;
@@ -444,39 +458,39 @@ export const WorldScene: React.FC<WorldSceneProps> = ({
     trailRibbonGeo.computeVertexNormals();
 
     const trailMat = new THREE.MeshStandardMaterial({
-      color: 0x22426c,
-      roughness: 0.55,
-      metalness: 0.28,
+      color: 0x18375e,
+      roughness: 0.4,
+      metalness: 0.5,
       normalMap: snowNormal,
-      normalScale: new THREE.Vector2(0.9, 0.9),
+      normalScale: new THREE.Vector2(0.6, 0.6),
       side: THREE.DoubleSide,
     });
     const trailRibbon = new THREE.Mesh(trailRibbonGeo, trailMat);
     trailRibbon.receiveShadow = true;
     scene.add(trailRibbon);
 
-    // 6D. Swirling Blizzard Particle System (2,000 Ice Crystals)
-    const blizzardCount = 2000;
+    // 6D. Swirling Blizzard Particles (1,800 Ice Crystals)
+    const blizzardCount = 1800;
     const blizzardGeo = new THREE.BufferGeometry();
     const blizzardPositions = new Float32Array(blizzardCount * 3);
     const blizzardVelocities = new Float32Array(blizzardCount * 3);
 
     for (let i = 0; i < blizzardCount; i++) {
-      blizzardPositions[i * 3] = (Math.random() - 0.5) * 70;
-      blizzardPositions[i * 3 + 1] = Math.random() * 30;
-      blizzardPositions[i * 3 + 2] = (Math.random() - 0.5) * 90 - 20;
+      blizzardPositions[i * 3] = (Math.random() - 0.5) * 75;
+      blizzardPositions[i * 3 + 1] = Math.random() * 32;
+      blizzardPositions[i * 3 + 2] = (Math.random() - 0.5) * 95 - 20;
 
-      blizzardVelocities[i * 3] = -0.075 - Math.random() * 0.095;
-      blizzardVelocities[i * 3 + 1] = -0.04 - Math.random() * 0.05;
-      blizzardVelocities[i * 3 + 2] = -0.03 - Math.random() * 0.05;
+      blizzardVelocities[i * 3] = -0.07 - Math.random() * 0.09;
+      blizzardVelocities[i * 3 + 1] = -0.035 - Math.random() * 0.045;
+      blizzardVelocities[i * 3 + 2] = -0.025 - Math.random() * 0.045;
     }
     blizzardGeo.setAttribute('position', new THREE.BufferAttribute(blizzardPositions, 3));
 
     const blizzardMat = new THREE.PointsMaterial({
       color: 0xe0f2fe,
-      size: 0.4,
+      size: 0.38,
       transparent: true,
-      opacity: 0.75,
+      opacity: 0.72,
       blending: THREE.AdditiveBlending,
     });
     const blizzardPoints = new THREE.Points(blizzardGeo, blizzardMat);
@@ -488,7 +502,6 @@ export const WorldScene: React.FC<WorldSceneProps> = ({
     const cp1Pos = trailCurve.getPoint(0.25);
     cp1Group.position.copy(cp1Pos).add(new THREE.Vector3(-1.6, 0, -0.3));
 
-    // Carved Nordic Timber Post
     const postGeo = new THREE.CylinderGeometry(0.1, 0.12, 2.5, 8);
     const woodMat = new THREE.MeshStandardMaterial({ color: 0x3d2314, roughness: 0.88 });
     const postMesh = new THREE.Mesh(postGeo, woodMat);
@@ -496,7 +509,6 @@ export const WorldScene: React.FC<WorldSceneProps> = ({
     postMesh.castShadow = true;
     cp1Group.add(postMesh);
 
-    // Signboard
     const signGeo = new THREE.BoxGeometry(1.4, 0.4, 0.08);
     const signMat = new THREE.MeshStandardMaterial({ color: 0x54321d, roughness: 0.82 });
     const signMesh = new THREE.Mesh(signGeo, signMat);
@@ -505,7 +517,6 @@ export const WorldScene: React.FC<WorldSceneProps> = ({
     signMesh.castShadow = true;
     cp1Group.add(signMesh);
 
-    // Glowing Lantern
     const cp1LanternGeo = new THREE.OctahedronGeometry(0.18, 0);
     const cp1LanternMat = new THREE.MeshBasicMaterial({ color: 0x38bdf8 });
     const cp1Lantern = new THREE.Mesh(cp1LanternGeo, cp1LanternMat);
@@ -516,7 +527,6 @@ export const WorldScene: React.FC<WorldSceneProps> = ({
     cp1Light.position.copy(cp1Lantern.position);
     cp1Group.add(cp1Light);
 
-    // Holographic Pulsing Ring Marker
     const ringGeo = new THREE.RingGeometry(0.48, 0.62, 32);
     const ringMat = new THREE.MeshBasicMaterial({
       color: 0x38bdf8,
@@ -535,7 +545,6 @@ export const WorldScene: React.FC<WorldSceneProps> = ({
     const cp2Pos = trailCurve.getPoint(0.55);
     cp2Group.position.copy(cp2Pos).add(new THREE.Vector3(-2.4, 0, -0.6));
 
-    // Wooden A-Frame Mountain Shelter
     const tentGeo = new THREE.ConeGeometry(2.0, 2.8, 4, 1);
     const tentMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.9 });
     const tentMesh = new THREE.Mesh(tentGeo, tentMat);
@@ -544,7 +553,6 @@ export const WorldScene: React.FC<WorldSceneProps> = ({
     tentMesh.castShadow = true;
     cp2Group.add(tentMesh);
 
-    // Campfire with flickering amber light & glowing embers
     const fireGeo = new THREE.DodecahedronGeometry(0.3, 0);
     const fireMat = new THREE.MeshBasicMaterial({ color: 0xff7b00 });
     const fireMesh = new THREE.Mesh(fireGeo, fireMat);
@@ -562,7 +570,6 @@ export const WorldScene: React.FC<WorldSceneProps> = ({
     const cp3Pos = trailCurve.getPoint(0.8);
     cp3Group.position.copy(cp3Pos).add(new THREE.Vector3(2.0, 0, -0.5));
 
-    // Megalithic Stone Arch
     const stoneMat = new THREE.MeshStandardMaterial({
       color: 0x1e293b,
       roughness: 0.92,
@@ -584,7 +591,6 @@ export const WorldScene: React.FC<WorldSceneProps> = ({
     lintel.castShadow = true;
     cp3Group.add(lintel);
 
-    // Floating Celestial Crystal Lens
     const crystalGeo = new THREE.OctahedronGeometry(0.42, 0);
     const crystalMat = new THREE.MeshBasicMaterial({ color: 0xa855f7 });
     const crystalMesh = new THREE.Mesh(crystalGeo, crystalMat);
@@ -601,14 +607,12 @@ export const WorldScene: React.FC<WorldSceneProps> = ({
     const cp4Pos = trailCurve.getPoint(1.0);
     cp4Group.position.copy(cp4Pos).add(new THREE.Vector3(0, 0, -1.4));
 
-    // Summit Stone Cairn
     const cairnGeo = new THREE.ConeGeometry(1.1, 2.0, 6);
     const cairnMesh = new THREE.Mesh(cairnGeo, stoneMat);
     cairnMesh.position.y = 1.0;
     cairnMesh.castShadow = true;
     cp4Group.add(cairnMesh);
 
-    // Glowing Golden Apex Beacon
     const beaconGeo = new THREE.SphereGeometry(0.38, 16, 16);
     const beaconMat = new THREE.MeshBasicMaterial({ color: 0xfacc15 });
     const beaconMesh = new THREE.Mesh(beaconGeo, beaconMat);
@@ -620,12 +624,11 @@ export const WorldScene: React.FC<WorldSceneProps> = ({
     cp4Group.add(summitLight);
     scene.add(cp4Group);
 
-    // --- 8. HIGH-FIDELITY 3D ADVENTURER CHARACTER RIG ---
-    // (Strictly positioned on the RIGHT side, facing away towards the mountain in third-person view)
+    // --- 8. SOLITARY EXPLORER CHARACTER RIG (MONOIO AESTHETIC) ---
+    // Strictly positioned on the RIGHT side standing upon the reflective glacial surface
     const characterGroup = new THREE.Group();
     characterGroup.castShadow = true;
 
-    // Materials
     const parkaMat = new THREE.MeshStandardMaterial({
       map: parkaTexture,
       roughness: 0.72,
@@ -635,14 +638,13 @@ export const WorldScene: React.FC<WorldSceneProps> = ({
     const leatherMat = new THREE.MeshStandardMaterial({ color: 0x451a03, roughness: 0.65 });
     const gloveMat = new THREE.MeshStandardMaterial({ color: 0x0f172a, roughness: 0.8 });
 
-    // 8A. Torso (Baffled Arctic Parka)
+    // 8A. Torso
     const torsoGeo = new THREE.CylinderGeometry(0.27, 0.31, 0.78, 12);
     const torsoMesh = new THREE.Mesh(torsoGeo, parkaMat);
     torsoMesh.position.y = 1.1;
     torsoMesh.castShadow = true;
     characterGroup.add(torsoMesh);
 
-    // Arctic fur collar
     const furGeo = new THREE.TorusGeometry(0.27, 0.095, 8, 16);
     const furMesh = new THREE.Mesh(furGeo, furMat);
     furMesh.position.set(0, 1.48, 0);
@@ -656,7 +658,6 @@ export const WorldScene: React.FC<WorldSceneProps> = ({
     hoodMesh.castShadow = true;
     characterGroup.add(hoodMesh);
 
-    // Goggles strap on back of hood
     const goggleStrapGeo = new THREE.TorusGeometry(0.24, 0.022, 6, 14);
     const goggleStrap = new THREE.Mesh(goggleStrapGeo, leatherMat);
     goggleStrap.position.copy(hoodMesh.position);
@@ -667,11 +668,10 @@ export const WorldScene: React.FC<WorldSceneProps> = ({
     const packGeo = new THREE.BoxGeometry(0.4, 0.58, 0.28);
     const packMat = new THREE.MeshStandardMaterial({ color: 0x334155, roughness: 0.85 });
     const packMesh = new THREE.Mesh(packGeo, packMat);
-    packMesh.position.set(0, 1.18, -0.26); // On character's back (facing camera in third-person view)
+    packMesh.position.set(0, 1.18, -0.26); // On back facing third-person camera
     packMesh.castShadow = true;
     characterGroup.add(packMesh);
 
-    // Bedroll on top of backpack
     const rollGeo = new THREE.CylinderGeometry(0.11, 0.11, 0.48, 12);
     const rollMat = new THREE.MeshStandardMaterial({ color: 0x0d9488, roughness: 0.9 });
     const rollMesh = new THREE.Mesh(rollGeo, rollMat);
@@ -679,7 +679,6 @@ export const WorldScene: React.FC<WorldSceneProps> = ({
     rollMesh.rotation.z = Math.PI / 2;
     characterGroup.add(rollMesh);
 
-    // Hanging Lantern on backpack
     const charLanternGeo = new THREE.DodecahedronGeometry(0.095, 0);
     const charLanternMat = new THREE.MeshBasicMaterial({ color: 0x38bdf8 });
     const charLantern = new THREE.Mesh(charLanternGeo, charLanternMat);
@@ -694,7 +693,6 @@ export const WorldScene: React.FC<WorldSceneProps> = ({
     const legGeo = new THREE.CylinderGeometry(0.1, 0.09, 0.7, 8);
     const bootGeo = new THREE.BoxGeometry(0.17, 0.21, 0.29);
 
-    // Left Leg
     const leftLeg = new THREE.Group();
     leftLeg.position.set(-0.16, 0.76, 0);
     const leftLegMesh = new THREE.Mesh(legGeo, parkaMat);
@@ -707,7 +705,6 @@ export const WorldScene: React.FC<WorldSceneProps> = ({
     leftLeg.add(leftBoot);
     characterGroup.add(leftLeg);
 
-    // Right Leg
     const rightLeg = new THREE.Group();
     rightLeg.position.set(0.16, 0.76, 0);
     const rightLegMesh = new THREE.Mesh(legGeo, parkaMat);
@@ -723,7 +720,6 @@ export const WorldScene: React.FC<WorldSceneProps> = ({
     // 8E. Articulated Arms & Trekking Pole
     const armGeo = new THREE.CylinderGeometry(0.08, 0.07, 0.66, 8);
 
-    // Left Arm
     const leftArm = new THREE.Group();
     leftArm.position.set(-0.35, 1.4, 0);
     const leftArmMesh = new THREE.Mesh(armGeo, parkaMat);
@@ -735,7 +731,6 @@ export const WorldScene: React.FC<WorldSceneProps> = ({
     leftArm.add(leftGlove);
     characterGroup.add(leftArm);
 
-    // Right Arm with Trekking Pole
     const rightArm = new THREE.Group();
     rightArm.position.set(0.35, 1.4, 0);
     const rightArmMesh = new THREE.Mesh(armGeo, parkaMat);
@@ -746,7 +741,6 @@ export const WorldScene: React.FC<WorldSceneProps> = ({
     rightGlove.position.set(0, -0.62, 0);
     rightArm.add(rightGlove);
 
-    // Trekking Pole
     const staffGeo = new THREE.CylinderGeometry(0.02, 0.02, 1.5, 8);
     const staffMat = new THREE.MeshStandardMaterial({ color: 0x0f172a, metalness: 0.7, roughness: 0.3 });
     const staffMesh = new THREE.Mesh(staffGeo, staffMat);
@@ -757,7 +751,6 @@ export const WorldScene: React.FC<WorldSceneProps> = ({
     characterGroup.add(rightArm);
     scene.add(characterGroup);
 
-    // Initial position on trail
     const startPoint = trailCurve.getPoint(0);
     characterGroup.position.copy(startPoint);
     characterGroup.lookAt(trailCurve.getPoint(0.02));
@@ -766,9 +759,9 @@ export const WorldScene: React.FC<WorldSceneProps> = ({
     const footprintGeo = new THREE.PlaneGeometry(0.15, 0.28);
     footprintGeo.rotateX(-Math.PI / 2);
     const footprintMat = new THREE.MeshBasicMaterial({
-      color: 0x0d1726,
+      color: 0x07111e,
       transparent: true,
-      opacity: 0.68,
+      opacity: 0.72,
       depthWrite: false,
     });
 
@@ -833,7 +826,7 @@ export const WorldScene: React.FC<WorldSceneProps> = ({
       // Update Aurora time uniform
       auroraUniforms.uTime.value = t;
 
-      // Smooth scroll lerp (damping for physical momentum)
+      // Smooth scroll lerp
       const delta = state.targetProgress - state.scrollProgress;
       state.scrollProgress += delta * 0.085;
       state.velocity = (state.scrollProgress - state.lastProgress) * 60;
@@ -843,7 +836,7 @@ export const WorldScene: React.FC<WorldSceneProps> = ({
       const speed = Math.abs(state.velocity);
       const isMoving = speed > 0.012;
 
-      // Update Character Position along 3D CatmullRom Curve
+      // Update Character Position along Spline
       const currentPoint = trailCurve.getPoint(p);
       const lookAheadP = Math.min(1.0, p + 0.018);
       const targetLook = trailCurve.getPoint(lookAheadP);
@@ -879,27 +872,20 @@ export const WorldScene: React.FC<WorldSceneProps> = ({
         state.walkPhase += speed * 4.2 + 0.065;
         const phase = state.walkPhase;
 
-        // Leg stride
         leftLeg.rotation.x = Math.sin(phase) * 0.72;
         rightLeg.rotation.x = -Math.sin(phase) * 0.72;
 
-        // Arm counter-swing
         leftArm.rotation.x = -Math.sin(phase) * 0.62;
         rightArm.rotation.x = Math.sin(phase) * 0.52;
 
-        // Vertical spine bounce & forward tilt on ascent
         torsoMesh.position.y = 1.1 + Math.abs(Math.sin(phase)) * 0.065;
         hoodMesh.position.y = 1.65 + Math.abs(Math.sin(phase)) * 0.065;
         packMesh.position.y = 1.18 + Math.abs(Math.sin(phase)) * 0.075;
-        characterGroup.rotation.x = 0.08; // Mountain incline lean
+        characterGroup.rotation.x = 0.08;
 
-        // Spine sway
         characterGroup.rotation.z = Math.sin(phase) * 0.038;
-
-        // Backpack lantern swing with momentum
         charLantern.position.x = 0.22 + Math.sin(phase * 1.5) * 0.055;
 
-        // Footstep audio and footprint placement on footstrike
         if (Math.abs(Math.sin(phase)) > 0.94 && t - lastStepTime > 0.26) {
           lastStepTime = t;
           audioEngine.playFootstep();
@@ -909,38 +895,33 @@ export const WorldScene: React.FC<WorldSceneProps> = ({
           spawnFootstep(currentPoint.clone().add(stepOffset), characterGroup.rotation.y);
         }
       } else {
-        // FIFA-STYLE AAA LIFELIKE IDLE STANCE
-        // 1. Subtle rhythmic chest expansion (breathing)
+        // FIFA-STYLE AAA IDLE STANCE
         const breath = Math.sin(t * 2.2) * 0.028;
         torsoMesh.scale.set(1 + breath, 1 + breath * 0.5, 1 + breath);
 
-        // 2. Procedural hip weight shifting (alternating leg rest every 4s)
         const weightShift = Math.sin(t * 0.75) * 0.048;
         leftLeg.rotation.z = weightShift * 0.6;
         rightLeg.rotation.z = -weightShift * 0.6;
         leftLeg.rotation.x = 0.06;
         rightLeg.rotation.x = -0.06;
 
-        // 3. Head looking around at the aurora / distant summit
         hoodMesh.rotation.y = Math.sin(t * 0.4) * 0.24;
         hoodMesh.rotation.x = -0.06 + Math.cos(t * 0.45) * 0.09;
 
-        // 4. Subtle arm & shoulder relaxing
         leftArm.rotation.x = THREE.MathUtils.lerp(leftArm.rotation.x, 0.06, 0.1);
         rightArm.rotation.x = THREE.MathUtils.lerp(rightArm.rotation.x, -0.08, 0.1);
         characterGroup.rotation.z = THREE.MathUtils.lerp(characterGroup.rotation.z, 0, 0.1);
         characterGroup.rotation.x = THREE.MathUtils.lerp(characterGroup.rotation.x, 0.02, 0.1);
 
-        // 5. Hanging lantern gentle wind swing
         charLantern.position.x = 0.22 + Math.sin(t * 2.6) * 0.028;
       }
 
-      // --- THIRD-PERSON CAMERA RIG ---
-      // Positioned behind character, framed on the RIGHT side of the screen
+      // --- THIRD-PERSON CAMERA RIG (MONOIO SPLIT CINEMATOGRAPHY) ---
+      // Frames the explorer clearly on the RIGHT, leaving the vast celestial void open on the left
       const isMobile = window.innerWidth < 768;
-      const camSideOffset = isMobile ? 0.2 : -1.4; // Shifts camera left so character is on the right
-      const camHeight = isMobile ? 1.7 : 1.95;
-      const camDistance = isMobile ? 4.0 : 4.6;
+      const camSideOffset = isMobile ? 0.2 : -1.45;
+      const camHeight = isMobile ? 1.75 : 1.95;
+      const camDistance = isMobile ? 4.1 : 4.7;
 
       const camTangent = trailCurve.getTangent(p);
       const camNormal = new THREE.Vector3(-camTangent.z, 0, camTangent.x).normalize();
@@ -950,7 +931,6 @@ export const WorldScene: React.FC<WorldSceneProps> = ({
         .add(camNormal.clone().multiplyScalar(camSideOffset));
       targetCamPos.y += camHeight;
 
-      // Smooth camera interpolation
       camera.position.lerp(targetCamPos, 0.085);
 
       const lookTarget = currentPoint.clone().add(camTangent.clone().multiplyScalar(6.5));
@@ -965,14 +945,14 @@ export const WorldScene: React.FC<WorldSceneProps> = ({
         blizzardPos[i * 3 + 2] += blizzardVelocities[i * 3 + 2];
 
         if (blizzardPos[i * 3 + 1] < camera.position.y - 6) {
-          blizzardPos[i * 3 + 1] = camera.position.y + 22;
-          blizzardPos[i * 3] = camera.position.x + (Math.random() - 0.5) * 60;
-          blizzardPos[i * 3 + 2] = camera.position.z + (Math.random() - 0.5) * 60;
+          blizzardPos[i * 3 + 1] = camera.position.y + 24;
+          blizzardPos[i * 3] = camera.position.x + (Math.random() - 0.5) * 65;
+          blizzardPos[i * 3 + 2] = camera.position.z + (Math.random() - 0.5) * 65;
         }
       }
       blizzardGeo.attributes.position.needsUpdate = true;
 
-      // --- SHOOTING STARS ENGINE ANIMATION ---
+      // --- SHOOTING STARS ENGINE ---
       state.shootingStars.forEach((star) => {
         if (!star.active && Math.random() < 0.003) {
           star.active = true;

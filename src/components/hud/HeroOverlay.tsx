@@ -1,5 +1,5 @@
 import React from 'react';
-import { ChevronDown, Compass, Sparkles, Terminal, MapPin } from 'lucide-react';
+import { ChevronDown, Compass, Sparkles, Terminal, MapPin, Radio, Activity } from 'lucide-react';
 
 interface HeroOverlayProps {
   scrollProgress: number;
@@ -10,9 +10,9 @@ export const HeroOverlay: React.FC<HeroOverlayProps> = ({
   scrollProgress,
   onBeginExpedition,
 }) => {
-  // Dissolve opacity as scroll advances (0 to 0.15)
-  const opacity = Math.max(0, 1 - scrollProgress * 7);
-  const translateY = scrollProgress * -80;
+  // Smooth dissolve opacity as scroll advances
+  const opacity = Math.max(0, 1 - scrollProgress * 7.5);
+  const translateY = scrollProgress * -70;
 
   if (opacity <= 0.01) return null;
 
@@ -25,64 +25,70 @@ export const HeroOverlay: React.FC<HeroOverlayProps> = ({
         transition: 'opacity 0.2s ease-out',
       }}
     >
-      {/* Top Header Badge */}
-      <div className="flex items-center gap-3">
-        <div className="glass-badge px-3.5 py-1.5 rounded-full flex items-center gap-2 border border-sky-400/30 text-xs font-mono tracking-wider text-sky-200">
-          <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
-          <span className="text-emerald-400 font-semibold">AVAILABLE FOR SENIOR ROLES</span>
-          <span className="text-slate-500">|</span>
-          <span className="flex items-center gap-1 text-slate-300">
-            <MapPin className="w-3 h-3 text-sky-400" /> Dubai, UAE
+      {/* Top Header Eyebrow (Monoio Style) */}
+      <div className="flex flex-wrap items-center justify-between gap-3 pt-4 sm:pt-0">
+        <div className="glass-badge px-3.5 py-1.5 rounded-full flex items-center gap-2.5 border border-white/10 text-[11px] font-mono tracking-[0.2em] text-slate-300">
+          <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+          <span className="text-emerald-400 font-bold">EXPEDITION LIVE</span>
+          <span className="text-slate-600">/</span>
+          <span className="text-slate-300 flex items-center gap-1">
+            <MapPin className="w-3 h-3 text-sky-400" /> DUBAI, UAE
           </span>
+        </div>
+
+        <div className="hidden sm:flex items-center gap-2 text-[11px] font-mono text-slate-400 tracking-[0.18em]">
+          <Activity className="w-3.5 h-3.5 text-emerald-400 animate-pulse" />
+          <span>SYS.LATENCY: &lt;12ms</span>
         </div>
       </div>
 
-      {/* Hero Left Content Section */}
-      <div className="max-w-2xl my-auto space-y-6 pt-12 md:pt-0">
-        {/* Sub-eyebrow */}
-        <div className="flex items-center gap-2 text-sky-400 font-mono text-xs md:text-sm tracking-widest uppercase">
+      {/* Main Hero Typography & Void Composition (Monoio Aesthetic) */}
+      <div className="max-w-2xl my-auto space-y-6 pt-10 md:pt-0">
+        
+        {/* Eyebrow */}
+        <div className="flex items-center gap-2 text-sky-400 font-mono text-xs md:text-sm tracking-[0.22em] uppercase font-semibold">
           <Terminal className="w-4 h-4" />
-          <span>Interactive 3D Expedition</span>
+          <span>Interactive 3D Portfolio</span>
         </div>
 
-        {/* Main Name & Title */}
-        <div className="space-y-2">
-          <h1 className="text-4xl sm:text-5xl md:text-7xl font-extrabold tracking-tight text-white leading-none">
+        {/* Display Headline */}
+        <div className="space-y-3">
+          <h1 className="text-4xl sm:text-6xl md:text-7xl lg:text-8xl font-black tracking-[-0.04em] text-white leading-[0.94]">
             Ajith <br />
             <span className="aurora-text-gradient">Pallissery Antony</span>
           </h1>
-          <p className="text-xl sm:text-2xl md:text-3xl font-semibold text-slate-200 tracking-tight pt-1">
+          <p className="text-xl sm:text-2xl md:text-3xl font-bold text-slate-200 tracking-[-0.02em] pt-1">
             Senior Frontend Engineer
           </p>
         </div>
 
-        {/* Subtitle / Value Proposition */}
+        {/* Editorial Subtext */}
         <p className="text-slate-300 text-sm sm:text-base md:text-lg leading-relaxed max-w-xl font-normal">
-          Architecting Real-Time Systems, Web3 Platforms & High-Performance Web Apps with micro-second responsiveness and cinematic visual polish.
+          Architecting real-time trading engines, Web3 platforms, and high-performance web ecosystems with microsecond responsiveness and cinematic visual craft.
         </p>
 
-        {/* Interactive Experience Badge */}
-        <div className="inline-flex items-center gap-3 glass-panel px-4 py-3 rounded-xl border border-sky-500/20 text-slate-200 text-xs sm:text-sm">
+        {/* Experience Pill */}
+        <div className="inline-flex items-center gap-3 glass-panel px-4 py-3 rounded-2xl border border-white/10 text-slate-200 text-xs sm:text-sm shadow-xl">
           <Sparkles className="w-4 h-4 text-sky-400 shrink-0" />
           <span>
-            <strong className="text-white font-semibold">6+ Years</strong> building low-latency Financial & PropTech products
+            <strong className="text-white font-bold">6+ Years</strong> engineering high-throughput Financial & PropTech products
           </span>
         </div>
       </div>
 
-      {/* Bottom Scroll Prompt */}
+      {/* Bottom Expedition Launch Bar */}
       <div className="pt-8 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <button
           onClick={onBeginExpedition}
-          className="pointer-events-auto group flex items-center gap-3 glass-panel-glow px-6 py-3.5 rounded-full hover:border-sky-400 text-white font-medium text-sm transition-all duration-300 hover:scale-105 active:scale-95 shadow-lg shadow-sky-950/50"
+          className="pointer-events-auto group flex items-center gap-3 glass-panel-glow px-7 py-3.5 rounded-full hover:border-sky-400 text-white font-semibold text-sm transition-all duration-300 hover:scale-105 active:scale-95 shadow-2xl shadow-sky-950/60"
         >
           <Compass className="w-4 h-4 text-sky-400 group-hover:rotate-45 transition-transform duration-500" />
           <span>Begin Expedition</span>
           <ChevronDown className="w-4 h-4 text-sky-400 animate-bounce" />
         </button>
 
-        <div className="flex items-center gap-4 text-xs font-mono text-slate-400">
-          <span className="hidden sm:inline">Use [Wheel / Drag / Arrow Keys] to Trek</span>
+        <div className="flex items-center gap-4 text-xs font-mono text-slate-400 tracking-[0.16em]">
+          <span className="hidden sm:inline">SCROLL / ARROW KEYS TO TREK</span>
           <span className="text-sky-400 font-bold">ALT 120m</span>
         </div>
       </div>
