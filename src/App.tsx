@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { MonoioCanvas } from './components/canvas/MonoioCanvas';
+import { WorldScene } from './components/canvas/WorldScene';
 import { HeroOverlay } from './components/hud/HeroOverlay';
-import { ScrollyContent } from './components/hud/ScrollyContent';
 import { HUDControls } from './components/hud/HUDControls';
 import { SkillsModal } from './components/hud/SkillsModal';
 import { ExperienceQuestLog } from './components/hud/ExperienceQuestLog';
@@ -17,7 +16,6 @@ export const App: React.FC = () => {
   const [activeCheckpoint, setActiveCheckpoint] = useState<number | null>(null);
   const [isMuted, setIsMuted] = useState<boolean>(true);
 
-  // Modals state
   const [skillsOpen, setSkillsOpen] = useState<boolean>(false);
   const [experienceOpen, setExperienceOpen] = useState<boolean>(false);
   const [philosophyOpen, setPhilosophyOpen] = useState<boolean>(false);
@@ -28,7 +26,6 @@ export const App: React.FC = () => {
   const scrollTimeoutRef = useRef<number | null>(null);
   const touchStartY = useRef<number>(0);
 
-  // Open modal based on checkpoint ID
   const handleOpenCheckpointModal = useCallback((checkpointId: number) => {
     if (checkpointId === 1) setSkillsOpen(true);
     else if (checkpointId === 2) setExperienceOpen(true);
@@ -36,7 +33,6 @@ export const App: React.FC = () => {
     else if (checkpointId === 4) setContactOpen(true);
   }, []);
 
-  // Update scroll progress within [0, 1]
   const updateScroll = useCallback((delta: number) => {
     setScrollProgress((prev) => {
       const next = Math.max(0, Math.min(1, prev + delta));
@@ -49,122 +45,87 @@ export const App: React.FC = () => {
     });
 
     setIsScrolling(true);
-    if (scrollTimeoutRef.current) {
-      window.clearTimeout(scrollTimeoutRef.current);
-    }
-    scrollTimeoutRef.current = window.setTimeout(() => {
-      setIsScrolling(false);
-    }, 180);
+    if (scrollTimeoutRef.current) window.clearTimeout(scrollTimeoutRef.current);
+    scrollTimeoutRef.current = window.setTimeout(() => setIsScrolling(false), 180);
   }, []);
 
-  // Wheel listener
+  // Wheel
   useEffect(() => {
-    const handleWheel = (e: WheelEvent) => {
-      const target = e.target as HTMLElement;
-      if (target && target.closest('.overflow-y-auto')) {
-        return;
-      }
+    const onWheel = (e: WheelEvent) => {
+      const t = e.target as HTMLElement;
+      if (t?.closest('.overflow-y-auto')) return;
       e.preventDefault();
-      const sensitivity = 0.00085;
-      updateScroll(e.deltaY * sensitivity);
+      updateScroll(e.deltaY * 0.00085);
     };
-
-    window.addEventListener('wheel', handleWheel, { passive: false });
-    return () => window.removeEventListener('wheel', handleWheel);
+    window.addEventListener('wheel', onWheel, { passive: false });
+    return () => window.removeEventListener('wheel', onWheel);
   }, [updateScroll]);
 
-  // Touch listener
+  // Touch
   useEffect(() => {
-    const handleTouchStart = (e: TouchEvent) => {
+    const onStart = (e: TouchEvent) => { touchStartY.current = e.touches[0].clientY; };
+    const onMove = (e: TouchEvent) => {
+      const t = e.target as HTMLElement;
+      if (t?.closest('.overflow-y-auto')) return;
+      const dy = touchStartY.current - e.touches[0].clientY;
       touchStartY.current = e.touches[0].clientY;
+      updateScroll(dy * 0.0022);
     };
-
-    const handleTouchMove = (e: TouchEvent) => {
-      const target = e.target as HTMLElement;
-      if (target && target.closest('.overflow-y-auto')) {
-        return;
-      }
-      const touchY = e.touches[0].clientY;
-      const deltaY = touchStartY.current - touchY;
-      touchStartY.current = touchY;
-      const sensitivity = 0.0022;
-      updateScroll(deltaY * sensitivity);
-    };
-
-    window.addEventListener('touchstart', handleTouchStart, { passive: true });
-    window.addEventListener('touchmove', handleTouchMove, { passive: true });
-
+    window.addEventListener('touchstart', onStart, { passive: true });
+    window.addEventListener('touchmove', onMove, { passive: true });
     return () => {
-      window.removeEventListener('touchstart', handleTouchStart);
-      window.removeEventListener('touchmove', handleTouchMove);
+      window.removeEventListener('touchstart', onStart);
+      window.removeEventListener('touchmove', onMove);
     };
   }, [updateScroll]);
 
-  // Keyboard listener
+  // Keyboard
   useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) {
-        return;
-      }
+    const onKey = (e: KeyboardEvent) => {
+      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
       const step = 0.04;
-      if (e.key === 'ArrowDown' || e.key === 's' || e.key === 'PageDown' || e.key === ' ') {
-        e.preventDefault();
-        updateScroll(step);
-      } else if (e.key === 'ArrowUp' || e.key === 'w' || e.key === 'PageUp') {
-        e.preventDefault();
-        updateScroll(-step);
-      } else if (e.key === 'Home') {
-        e.preventDefault();
-        setScrollProgress(0);
-      } else if (e.key === 'End') {
-        e.preventDefault();
-        setScrollProgress(1);
-      }
+      if (['ArrowDown', 's', 'PageDown', ' '].includes(e.key)) { e.preventDefault(); updateScroll(step); }
+      else if (['ArrowUp', 'w', 'PageUp'].includes(e.key)) { e.preventDefault(); updateScroll(-step); }
+      else if (e.key === 'Home') { e.preventDefault(); setScrollProgress(0); }
+      else if (e.key === 'End') { e.preventDefault(); setScrollProgress(1); }
     };
-
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
   }, [updateScroll]);
 
-  const handleJumpToProgress = useCallback((targetP: number) => {
-    setScrollProgress(targetP);
-    if (Math.abs(targetP - 0.25) < 0.08) setActiveCheckpoint(1);
-    else if (Math.abs(targetP - 0.55) < 0.08) setActiveCheckpoint(2);
-    else if (Math.abs(targetP - 0.80) < 0.08) setActiveCheckpoint(3);
-    else if (targetP >= 0.94) setActiveCheckpoint(4);
+  const handleJumpToProgress = useCallback((p: number) => {
+    setScrollProgress(p);
+    if (Math.abs(p - 0.25) < 0.08) setActiveCheckpoint(1);
+    else if (Math.abs(p - 0.55) < 0.08) setActiveCheckpoint(2);
+    else if (Math.abs(p - 0.80) < 0.08) setActiveCheckpoint(3);
+    else if (p >= 0.94) setActiveCheckpoint(4);
     else setActiveCheckpoint(null);
   }, []);
 
   const handleToggleSound = useCallback(() => {
-    const muted = audioEngine.toggleMute();
-    setIsMuted(muted);
+    setIsMuted(audioEngine.toggleMute());
   }, []);
 
   return (
-    <main className="relative w-screen h-screen overflow-hidden select-none bg-[#02040a]">
-      {/* Monoio Photorealistic Cinematic Atmosphere & Canvas */}
-      <MonoioCanvas
+    <main className="relative w-screen h-screen overflow-hidden select-none bg-[#01030a]">
+      {/* THREE.JS 3D WORLD ENGINE */}
+      <WorldScene
         scrollProgress={scrollProgress}
         isScrolling={isScrolling}
+        activeCheckpoint={activeCheckpoint}
         onCheckpointTrigger={(id) => {
           setActiveCheckpoint(id);
+          handleOpenCheckpointModal(id);
         }}
       />
 
-      {/* Scene 0: Hero Overlay (Dissolves on initial scroll) */}
+      {/* HERO OVERLAY — dissolves on scroll */}
       <HeroOverlay
         scrollProgress={scrollProgress}
-        onBeginExpedition={() => handleJumpToProgress(0.25)}
+        onBeginExpedition={() => updateScroll(0.04)}
       />
 
-      {/* Dynamic Scroll-Revealed Checkpoint Content (Monoio Scrollytelling) */}
-      <ScrollyContent
-        scrollProgress={scrollProgress}
-        onOpenResume={() => setResumeOpen(true)}
-        onOpenMessage={() => setMessageOpen(true)}
-      />
-
-      {/* Permanent HUD Controls & Progress Bar */}
+      {/* HUD */}
       <HUDControls
         scrollProgress={scrollProgress}
         onJumpToProgress={handleJumpToProgress}
@@ -174,38 +135,18 @@ export const App: React.FC = () => {
         onOpenCheckpointModal={handleOpenCheckpointModal}
       />
 
-      {/* Detail Modals */}
-      <SkillsModal
-        isOpen={skillsOpen}
-        onClose={() => setSkillsOpen(false)}
-      />
-
-      <ExperienceQuestLog
-        isOpen={experienceOpen}
-        onClose={() => setExperienceOpen(false)}
-      />
-
-      <PhilosophyPanel
-        isOpen={philosophyOpen}
-        onClose={() => setPhilosophyOpen(false)}
-      />
-
+      {/* CHECKPOINT MODALS */}
+      <SkillsModal isOpen={skillsOpen} onClose={() => setSkillsOpen(false)} />
+      <ExperienceQuestLog isOpen={experienceOpen} onClose={() => setExperienceOpen(false)} />
+      <PhilosophyPanel isOpen={philosophyOpen} onClose={() => setPhilosophyOpen(false)} />
       <ContactTerminal
         isOpen={contactOpen}
         onClose={() => setContactOpen(false)}
         onOpenResume={() => setResumeOpen(true)}
         onOpenMessage={() => setMessageOpen(true)}
       />
-
-      <ResumeModal
-        isOpen={resumeOpen}
-        onClose={() => setResumeOpen(false)}
-      />
-
-      <MessageModal
-        isOpen={messageOpen}
-        onClose={() => setMessageOpen(false)}
-      />
+      <ResumeModal isOpen={resumeOpen} onClose={() => setResumeOpen(false)} />
+      <MessageModal isOpen={messageOpen} onClose={() => setMessageOpen(false)} />
     </main>
   );
 };
