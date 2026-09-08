@@ -92,9 +92,9 @@ export const HUDControls: React.FC<HUDControlsProps> = ({
         </div>
       </header>
 
-      {/* Floating Checkpoint Trigger Beacon on Left Screen */}
+      {/* Floating Checkpoint Trigger Beacon on Right Screen */}
       {activeCheckpoint && activeCheckpoint > 0 && (
-        <div className="fixed left-6 bottom-24 z-20 pointer-events-auto animate-in slide-in-from-left duration-200">
+        <div className="fixed right-6 bottom-24 z-20 pointer-events-auto animate-in slide-in-from-right duration-200">
           <button
             onClick={() => onOpenCheckpointModal(activeCheckpoint)}
             className="group flex items-center gap-3 glass-panel-glow px-4 py-3 rounded-2xl border border-sky-400 text-white shadow-2xl hover:scale-105 active:scale-95 transition-all"

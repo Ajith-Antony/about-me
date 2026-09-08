@@ -183,8 +183,8 @@ export const ScrollyContent: React.FC<ScrollyContentProps> = ({
   const selectedExp = experiences.find((e) => e.id === selectedExpId) || experiences[0];
 
   return (
-    <div className="absolute inset-0 pointer-events-none z-10 flex items-center p-4 sm:p-8 md:p-12 lg:p-16 max-w-7xl mx-auto">
-      <div className="w-full max-w-xl">
+    <div className="absolute inset-0 pointer-events-none z-10 flex items-center justify-end p-4 sm:p-8 md:p-12 lg:p-16 max-w-7xl mx-auto">
+      <div className="w-full max-w-xl ml-auto">
         
         {/* CHECKPOINT 1: SKILLS SIGNPOST (25%) */}
         {activeSection === 1 && (

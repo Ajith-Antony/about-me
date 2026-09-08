@@ -25,24 +25,24 @@ export const HeroOverlay: React.FC<HeroOverlayProps> = ({
         transition: 'opacity 0.25s cubic-bezier(0.16, 1, 0.3, 1)',
       }}
     >
-      {/* 1. Header Status Eyebrow (Single eyebrow on the entire page) */}
+      {/* 1. Header Status Eyebrow (Right-aligned) */}
       <div className="flex items-center justify-between pt-3 sm:pt-0">
-        <div className="glass-badge px-4 py-1.5 rounded-full flex items-center gap-2.5 text-[11px] font-mono tracking-[0.18em] text-slate-300">
-          <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-          <span className="font-semibold text-slate-200">EXPEDITION LIVE</span>
-          <span className="text-slate-600">/</span>
-          <span className="text-sky-400 font-bold">DUBAI, UAE</span>
-        </div>
-
         <div className="hidden sm:flex items-center gap-3 text-[11px] font-mono text-slate-400 tracking-[0.16em]">
           <span>LATENCY: &lt;10ms</span>
           <span className="text-slate-600">•</span>
           <span className="text-sky-400 font-semibold">ALT 120m</span>
         </div>
+
+        <div className="glass-badge px-4 py-1.5 rounded-full flex items-center gap-2.5 text-[11px] font-mono tracking-[0.18em] text-slate-300 ml-auto">
+          <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+          <span className="font-semibold text-slate-200">EXPEDITION LIVE</span>
+          <span className="text-slate-600">/</span>
+          <span className="text-sky-400 font-bold">DUBAI, UAE</span>
+        </div>
       </div>
 
-      {/* 2. Main Editorial Headline & Value-Prop (Max 4 text elements) */}
-      <div className="max-w-2xl my-auto space-y-6 pt-12 md:pt-0">
+      {/* 2. Main Editorial Headline & Value-Prop (Docked to the RIGHT) */}
+      <div className="max-w-2xl my-auto space-y-6 pt-12 md:pt-0 ml-auto flex flex-col items-end text-right">
         <div className="space-y-2">
           <h1 className="text-5xl sm:text-7xl md:text-8xl font-black tracking-[-0.04em] text-white leading-[0.92]">
             Ajith <br />
@@ -53,7 +53,7 @@ export const HeroOverlay: React.FC<HeroOverlayProps> = ({
           </p>
         </div>
 
-        {/* Concise value prop: exactly 17 words */}
+        {/* Concise value prop */}
         <p className="text-slate-300 text-base sm:text-lg leading-relaxed max-w-lg font-normal">
           Architecting low-latency trading engines, Web3 platforms, and high-performance web ecosystems with microsecond responsiveness.
         </p>
@@ -67,21 +67,21 @@ export const HeroOverlay: React.FC<HeroOverlayProps> = ({
         </div>
       </div>
 
-      {/* 3. Bottom Launch Bar */}
-      <div className="pt-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+      {/* 3. Bottom Launch Bar (Aligned right) */}
+      <div className="pt-6 flex flex-col sm:flex-row items-end sm:items-center justify-between gap-4">
+        <div className="hidden sm:flex items-center gap-3 text-xs font-mono text-slate-400 tracking-[0.16em]">
+          <span>SCROLL / ARROWS TO TREK</span>
+          <span className="text-sky-400 font-bold">4 CHECKPOINTS AHEAD</span>
+        </div>
+
         <button
           onClick={onBeginExpedition}
-          className="pointer-events-auto group flex items-center gap-3 glass-panel-glow px-6 py-3.5 rounded-full hover:border-sky-400 text-white font-semibold text-xs sm:text-sm tracking-wide transition-all duration-200 active:scale-95 shadow-2xl shadow-sky-950/50"
+          className="pointer-events-auto group flex items-center gap-3 glass-panel-glow px-6 py-3.5 rounded-full hover:border-sky-400 text-white font-semibold text-xs sm:text-sm tracking-wide transition-all duration-200 active:scale-95 shadow-2xl shadow-sky-950/50 ml-auto"
         >
           <Compass className="w-4 h-4 text-sky-400 group-hover:rotate-45 transition-transform duration-300" />
           <span>Begin Expedition</span>
           <ChevronDown className="w-4 h-4 text-sky-400 animate-bounce" />
         </button>
-
-        <div className="flex items-center gap-3 text-xs font-mono text-slate-400 tracking-[0.16em]">
-          <span className="hidden sm:inline">SCROLL / ARROWS TO TREK</span>
-          <span className="text-sky-400 font-bold">4 CHECKPOINTS AHEAD</span>
-        </div>
       </div>
     </div>
   );

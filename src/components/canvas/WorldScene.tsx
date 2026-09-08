@@ -52,7 +52,7 @@ export const WorldScene: React.FC<WorldSceneProps> = ({
 
   const [baseLoaded, setBaseLoaded] = useState<boolean>(false);
   const [summitLoaded, setSummitLoaded] = useState<boolean>(false);
-  const [characterLoaded, setCharacterLoaded] = useState<boolean>(false);
+  const [, setCharacterLoaded] = useState<boolean>(false);
 
   // Animation and physics state
   const stateRef = useRef({
@@ -108,8 +108,8 @@ export const WorldScene: React.FC<WorldSceneProps> = ({
   }, [handleMouseMove]);
 
   // ============================================================================
-  // THREE.JS RIGGED 3D CHARACTER & SPOTLIGHT SHADOW ENGINE
-  // Inspired by webgl_lights_spotlight & webgl_loader_fbx
+  // THREE.JS RIGGED 3D CHARACTER, PATHWAY & SPOTLIGHT SHADOW ENGINE
+  // Adhering to .agents/skills/threejs-expert/ standards
   // ============================================================================
   useEffect(() => {
     const mount = threeMountRef.current;
@@ -123,12 +123,15 @@ export const WorldScene: React.FC<WorldSceneProps> = ({
     const scene = new THREE.Scene();
 
     const camera = new THREE.PerspectiveCamera(40, width / height, 0.1, 100);
-    camera.position.set(2.4, 1.4, 6.2);
+    // Camera positioned to frame the character on the LEFT third looking forward-right
+    camera.position.set(-2.4, 1.4, 6.2);
 
     const renderer = new THREE.WebGLRenderer({
       antialias: true,
       alpha: true,
       powerPreference: 'high-performance',
+      stencil: false,
+      depth: true,
     });
     renderer.setSize(width, height);
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
@@ -139,29 +142,29 @@ export const WorldScene: React.FC<WorldSceneProps> = ({
 
     mount.appendChild(renderer.domElement);
 
-    // 2. Three.js SpotLight System (webgl_lights_spotlight technique)
-    const spotLight = new THREE.SpotLight(0xe0f2fe, 35);
-    spotLight.position.set(3.8, 5.0, 3.2);
+    // 2. Three.js SpotLight System (Overhead Left targeting the character on the left)
+    const spotLight = new THREE.SpotLight(0xe0f2fe, 36);
+    spotLight.position.set(-3.6, 5.2, 3.2);
     spotLight.angle = Math.PI / 4.5;
-    spotLight.penumbra = 0.85;       // High penumbra for ultra-soft shadow edges
-    spotLight.decay = 2.0;           // Physically correct inverse-square falloff
-    spotLight.distance = 25;
+    spotLight.penumbra = 0.85;       // Soft penumbra boundary
+    spotLight.decay = 2.0;           // Inverse-square physical falloff
+    spotLight.distance = 28;
     spotLight.castShadow = true;
     spotLight.shadow.mapSize.width = 2048;
     spotLight.shadow.mapSize.height = 2048;
     spotLight.shadow.camera.near = 1;
-    spotLight.shadow.camera.far = 16;
+    spotLight.shadow.camera.far = 18;
     spotLight.shadow.bias = -0.0008;
 
     scene.add(spotLight);
     scene.add(spotLight.target);
 
-    // Explorer Headlamp / Torch Spotlight (projects forward beam into the mist)
-    const headlamp = new THREE.SpotLight(0x7dd3fc, 18);
+    // Explorer Forward Headlamp Spotlight
+    const headlamp = new THREE.SpotLight(0x7dd3fc, 20);
     headlamp.angle = Math.PI / 5;
     headlamp.penumbra = 0.9;
     headlamp.decay = 2.0;
-    headlamp.distance = 18;
+    headlamp.distance = 20;
     headlamp.castShadow = false;
     scene.add(headlamp);
     scene.add(headlamp.target);
@@ -170,22 +173,141 @@ export const WorldScene: React.FC<WorldSceneProps> = ({
     const ambientLight = new THREE.AmbientLight(0x071528, 1.2);
     scene.add(ambientLight);
 
-    const auroraRimLight = new THREE.DirectionalLight(0x34d399, 1.5);
-    auroraRimLight.position.set(-4, 3, -2);
+    const auroraRimLight = new THREE.DirectionalLight(0x34d399, 1.6);
+    auroraRimLight.position.set(4, 3, -2);
     scene.add(auroraRimLight);
 
-    // 3. Shadow-Receiving Ground Plane (ShadowMaterial lets photographic background show through!)
+    // 3. 3D MOUNTAIN PATHWAY (Custom Spline Geometry on the Left)
+    // Mountain trail spline winding from foreground left into the pass
+    const pathPoints = [
+      new THREE.Vector3(-1.75, -0.02, 3.5),
+      new THREE.Vector3(-1.72, 0.02, 0.5),
+      new THREE.Vector3(-1.58, 0.16, -2.5),
+      new THREE.Vector3(-1.42, 0.38, -5.5),
+      new THREE.Vector3(-1.32, 0.65, -8.5),
+      new THREE.Vector3(-1.25, 0.95, -11.5),
+    ];
+    const trailCurve = new THREE.CatmullRomCurve3(pathPoints);
+
+    // Construct 3D Pathway Ribbon Mesh
+    const pathCurvePoints = trailCurve.getPoints(60);
+    const pathWidth = 1.35;
+    const pathVertices: number[] = [];
+    const pathIndices: number[] = [];
+    const pathUvs: number[] = [];
+
+    for (let i = 0; i < pathCurvePoints.length; i++) {
+      const pt = pathCurvePoints[i];
+      const tangent = trailCurve.getTangentAt(i / (pathCurvePoints.length - 1)).normalize();
+      const normal = new THREE.Vector3(-tangent.z, 0, tangent.x).normalize();
+
+      const pLeft = pt.clone().add(normal.clone().multiplyScalar(-pathWidth * 0.5));
+      const pRight = pt.clone().add(normal.clone().multiplyScalar(pathWidth * 0.5));
+
+      pathVertices.push(pLeft.x, pLeft.y, pLeft.z);
+      pathVertices.push(pRight.x, pRight.y, pRight.z);
+
+      const v = i / (pathCurvePoints.length - 1);
+      pathUvs.push(0, v, 1, v);
+
+      if (i < pathCurvePoints.length - 1) {
+        const base = i * 2;
+        pathIndices.push(base, base + 1, base + 2);
+        pathIndices.push(base + 1, base + 3, base + 2);
+      }
+    }
+
+    const pathGeo = new THREE.BufferGeometry();
+    pathGeo.setAttribute('position', new THREE.Float32BufferAttribute(pathVertices, 3));
+    pathGeo.setAttribute('uv', new THREE.Float32BufferAttribute(pathUvs, 2));
+    pathGeo.setIndex(pathIndices);
+    pathGeo.computeVertexNormals();
+
+    const pathMat = new THREE.MeshStandardMaterial({
+      color: 0x111c2e,          // Deep alpine slate/rock with frost
+      roughness: 0.85,
+      metalness: 0.15,
+      flatShading: true,
+    });
+    const pathMesh = new THREE.Mesh(pathGeo, pathMat);
+    pathMesh.receiveShadow = true;
+    pathMesh.castShadow = true;
+    scene.add(pathMesh);
+
+    // Trail border stones & trail cairn markers along the path edge
+    const rockGeo = new THREE.DodecahedronGeometry(0.18, 0);
+    const rockMat = new THREE.MeshStandardMaterial({
+      color: 0x1e293b,
+      roughness: 0.9,
+      metalness: 0.1,
+      flatShading: true,
+    });
+    const snowCapMat = new THREE.MeshStandardMaterial({
+      color: 0xe0f2fe,
+      roughness: 0.95,
+      metalness: 0.05,
+    });
+
+    const rocksGroup = new THREE.Group();
+    // Place stones along both borders of the path
+    for (let i = 2; i < pathCurvePoints.length - 2; i += 3) {
+      const pt = pathCurvePoints[i];
+      const tangent = trailCurve.getTangentAt(i / (pathCurvePoints.length - 1)).normalize();
+      const normal = new THREE.Vector3(-tangent.z, 0, tangent.x).normalize();
+
+      // Left border stone
+      const rMeshLeft = new THREE.Mesh(rockGeo, rockMat);
+      const lPos = pt.clone().add(normal.clone().multiplyScalar(-pathWidth * 0.58));
+      rMeshLeft.position.set(lPos.x, lPos.y + 0.06, lPos.z);
+      rMeshLeft.scale.set(0.9 + Math.random() * 0.4, 0.7 + Math.random() * 0.5, 0.9 + Math.random() * 0.4);
+      rMeshLeft.rotation.set(Math.random() * Math.PI, Math.random() * Math.PI, 0);
+      rMeshLeft.castShadow = true;
+      rMeshLeft.receiveShadow = true;
+      rocksGroup.add(rMeshLeft);
+
+      // Right border stone
+      const rMeshRight = new THREE.Mesh(rockGeo, rockMat);
+      const rPos = pt.clone().add(normal.clone().multiplyScalar(pathWidth * 0.58));
+      rMeshRight.position.set(rPos.x, rPos.y + 0.06, rPos.z);
+      rMeshRight.scale.set(0.8 + Math.random() * 0.5, 0.6 + Math.random() * 0.4, 0.8 + Math.random() * 0.5);
+      rMeshRight.rotation.set(Math.random() * Math.PI, Math.random() * Math.PI, 0);
+      rMeshRight.castShadow = true;
+      rMeshRight.receiveShadow = true;
+      rocksGroup.add(rMeshRight);
+
+      // Expedition Trail Cairn Marker at interval
+      if (i === 11 || i === 29 || i === 47) {
+        const markerPost = new THREE.Mesh(
+          new THREE.BoxGeometry(0.08, 0.75, 0.08),
+          new THREE.MeshStandardMaterial({ color: 0x334155, roughness: 0.8 })
+        );
+        markerPost.position.set(lPos.x - 0.15, lPos.y + 0.35, lPos.z);
+        markerPost.castShadow = true;
+        rocksGroup.add(markerPost);
+
+        // Subtle glowing trail beacon lantern on post
+        const lanternLight = new THREE.Mesh(
+          new THREE.SphereGeometry(0.06, 8, 8),
+          new THREE.MeshBasicMaterial({ color: 0x38bdf8 })
+        );
+        lanternLight.position.set(lPos.x - 0.15, lPos.y + 0.75, lPos.z);
+        rocksGroup.add(lanternLight);
+      }
+    }
+    scene.add(rocksGroup);
+
+    // Transparent Shadow Floor (lets the photographic background plate show through)
     const floorGeo = new THREE.PlaneGeometry(35, 35);
     const floorMat = new THREE.ShadowMaterial({
       opacity: 0.65,
     });
     const floor = new THREE.Mesh(floorGeo, floorMat);
     floor.rotation.x = -Math.PI / 2;
-    floor.position.y = -0.01;
+    floor.position.y = -0.02;
     floor.receiveShadow = true;
     scene.add(floor);
 
-    // 4. Load Rigged 3D Character (webgl_loader_fbx / GLTFLoader)
+    // 4. Load Rigged 3D Character (Positioned on the LEFT pathway)
     let mixer: THREE.AnimationMixer | null = null;
     let idleAction: THREE.AnimationAction | null = null;
     let walkAction: THREE.AnimationAction | null = null;
@@ -198,8 +320,8 @@ export const WorldScene: React.FC<WorldSceneProps> = ({
       (gltf) => {
         characterModel = gltf.scene;
         characterModel.scale.set(1.42, 1.42, 1.42);
-        characterModel.position.set(1.85, 0, 0);
-        characterModel.rotation.y = -Math.PI * 0.15; // Angled forward-left into pass
+        characterModel.position.set(-1.75, 0, 0);
+        characterModel.rotation.y = Math.PI * 0.15; // Angled forward-right into pass
 
         // Enable shadows across all skinned meshes and bones
         characterModel.traverse((child) => {
@@ -262,10 +384,8 @@ export const WorldScene: React.FC<WorldSceneProps> = ({
       const p = st.currentProgress;
       const vel = st.scrollVelocity;
 
-      // Update 3D Character Locomotion & Position
+      // Update 3D Character Locomotion & Position on the Left Pathway
       if (characterModel && mixer) {
-        // Locomotion weight blending based on scroll velocity
-        // vel < 0.08 -> Idle, 0.08 <= vel < 1.4 -> Walk, vel >= 1.4 -> Run
         const isMoving = vel > 0.06 && st.isScrolling;
         const targetIdleWeight = isMoving ? 0 : 1;
         const targetWalkWeight = isMoving && vel < 1.3 ? 1 : isMoving && vel >= 1.3 ? 0.3 : 0;
@@ -288,34 +408,35 @@ export const WorldScene: React.FC<WorldSceneProps> = ({
 
         mixer.update(delta);
 
-        // Advance character along 3D mountain trail as scrollProgress advances
-        const trailX = 1.85 - Math.sin(p * Math.PI * 0.8) * 0.65;
-        const trailY = p * 0.65;
-        const trailZ = -p * 5.2;
+        // Advance character along the 3D pathway curve as scroll progresses
+        const tPath = Math.min(0.98, Math.max(0.01, 0.08 + p * 0.85));
+        const currentPathPt = trailCurve.getPointAt(tPath);
+        const tangent = trailCurve.getTangentAt(tPath).normalize();
 
-        characterModel.position.set(trailX, trailY, trailZ);
-        characterModel.rotation.y = -Math.PI * 0.15 - Math.sin(p * Math.PI) * 0.25;
+        characterModel.position.copy(currentPathPt);
+        const lookTarget = currentPathPt.clone().add(tangent);
+        characterModel.lookAt(lookTarget);
 
-        // Position ground plane with character
-        floor.position.set(trailX, trailY - 0.01, trailZ);
+        // Position ground shadow floor beneath character
+        floor.position.set(currentPathPt.x, currentPathPt.y - 0.01, currentPathPt.z);
 
-        // Update spotlight target to illuminate the moving character
-        spotLight.target.position.set(trailX, trailY + 1.1, trailZ);
+        // Update spotlight target to illuminate character and pathway from overhead left
+        spotLight.target.position.set(currentPathPt.x, currentPathPt.y + 1.1, currentPathPt.z);
         spotLight.position.set(
-          trailX + 1.8 + st.currentMouseX * 0.6,
-          trailY + 4.8,
-          trailZ + 3.2 - st.currentMouseY * 0.4
+          currentPathPt.x - 1.8 + st.currentMouseX * 0.6,
+          currentPathPt.y + 4.8,
+          currentPathPt.z + 3.2 - st.currentMouseY * 0.4
         );
 
-        // Explorer headlamp projecting forward into the path
-        headlamp.position.set(trailX - 0.1, trailY + 1.35, trailZ + 0.2);
-        headlamp.target.position.set(trailX - 1.6, trailY + 0.3, trailZ - 4.5);
+        // Explorer headlamp projecting forward along the pathway
+        headlamp.position.set(currentPathPt.x, currentPathPt.y + 1.35, currentPathPt.z + 0.1);
+        headlamp.target.position.copy(lookTarget.clone().add(new THREE.Vector3(0, -0.6, 0)));
 
-        // Smooth camera follow & parallax framing
-        camera.position.x = 2.4 + st.currentMouseX * 0.35;
+        // Camera smoothly tracks character with subtle mouse parallax
+        camera.position.x = -2.4 + st.currentMouseX * 0.35;
         camera.position.y = 1.4 + p * 0.45 - st.currentMouseY * 0.25;
         camera.position.z = 6.2 - p * 3.4;
-        camera.lookAt(trailX - 0.45, trailY + 1.1, trailZ);
+        camera.lookAt(currentPathPt.x + 0.45, currentPathPt.y + 1.1, currentPathPt.z);
       }
 
       renderer.render(scene, camera);
@@ -327,6 +448,13 @@ export const WorldScene: React.FC<WorldSceneProps> = ({
       window.removeEventListener('resize', handleResize);
       cancelAnimationFrame(animId);
       renderer.dispose();
+      pathGeo.dispose();
+      pathMat.dispose();
+      rockGeo.dispose();
+      rockMat.dispose();
+      snowCapMat.dispose();
+      floorGeo.dispose();
+      floorMat.dispose();
       if (mount.contains(renderer.domElement)) {
         mount.removeChild(renderer.domElement);
       }
@@ -448,7 +576,7 @@ export const WorldScene: React.FC<WorldSceneProps> = ({
       ctx.clearRect(0, 0, W, H);
 
       /* ========================================================================
-         1. LIVING GLSL AURORA WAVE RIBBONS (Upper Right Sky)
+         1. LIVING GLSL AURORA WAVE RIBBONS (Upper Sky)
       ======================================================================== */
       const baseAlpha = Math.max(0, 1 - Math.max(0, (p - 0.70) / 0.22));
       if (baseAlpha > 0.05) {
@@ -480,7 +608,6 @@ export const WorldScene: React.FC<WorldSceneProps> = ({
             const progressX = i / steps;
             const x = x0 + i * stepW;
 
-            // Multi-frequency wave displacement
             const wave =
               Math.sin(progressX * freq + t * speed) * waveAmp +
               Math.cos(progressX * freq * 1.8 - t * speed * 0.7) * (waveAmp * 0.4) +
@@ -509,7 +636,7 @@ export const WorldScene: React.FC<WorldSceneProps> = ({
 
         // Primary Emerald Ribbon
         drawAuroraRibbon(
-          0.38, 0.98,
+          0.15, 0.85,
           0.06,
           H * 0.08,
           4.8, 1.2,
@@ -521,7 +648,7 @@ export const WorldScene: React.FC<WorldSceneProps> = ({
 
         // Secondary Cyan Ribbon
         drawAuroraRibbon(
-          0.48, 1.02,
+          0.30, 0.95,
           0.12,
           H * 0.06,
           3.6, 0.85,
@@ -534,8 +661,8 @@ export const WorldScene: React.FC<WorldSceneProps> = ({
         // Lake bloom reflection
         const bloomY = H * 0.62;
         const lakeBloom = ctx.createRadialGradient(
-          W * 0.68, bloomY + 45, 15,
-          W * 0.65, bloomY + 180, W * 0.45
+          W * 0.55, bloomY + 45, 15,
+          W * 0.52, bloomY + 180, W * 0.45
         );
         lakeBloom.addColorStop(0, 'rgba(52, 211, 153, 0.28)');
         lakeBloom.addColorStop(0.4, 'rgba(56, 189, 248, 0.18)');
@@ -548,7 +675,7 @@ export const WorldScene: React.FC<WorldSceneProps> = ({
       }
 
       /* ========================================================================
-         2. INTERACTIVE WATER RIPPLES (Lower 38% Mirror Lake)
+         2. INTERACTIVE WATER RIPPLES (Lower Mirror Lake)
       ======================================================================== */
       if (baseAlpha > 0.1) {
         ctx.save();
@@ -588,7 +715,7 @@ export const WorldScene: React.FC<WorldSceneProps> = ({
         for (let ry = waterTop + 15; ry < H; ry += 24) {
           const shiftX = Math.sin(ry * 0.05 + t * 1.6) * 16;
           const spanW = W * (0.5 + 0.5 * ((ry - waterTop) / (H - waterTop)));
-          const cx = W * 0.65;
+          const cx = W * 0.55;
           ctx.beginPath();
           ctx.moveTo(cx - spanW * 0.4 + shiftX, ry);
           ctx.lineTo(cx + spanW * 0.4 + shiftX * 0.5, ry);
@@ -758,7 +885,7 @@ export const WorldScene: React.FC<WorldSceneProps> = ({
   return (
     <div className="fixed inset-0 w-full h-full overflow-hidden select-none pointer-events-none bg-[#01030a] z-0">
       
-      {/* 1. PHOTOREALISTIC NORDIC ARCTIC BACKDROP STAGE */}
+      {/* 1. PHOTOREALISTIC AURORA MOUNTAIN BACKDROP STAGE */}
       <div
         ref={containerRef}
         className="absolute inset-0 w-full h-full will-change-transform"
@@ -767,20 +894,20 @@ export const WorldScene: React.FC<WorldSceneProps> = ({
           transition: 'transform 0.12s cubic-bezier(0.16, 1, 0.3, 1)',
         }}
       >
-        {/* Baseplate: 8K Photorealistic Nordic Arctic Aurora Lake */}
+        {/* Baseplate: 8K Photorealistic Aurora Mountain */}
         <div
           className="absolute inset-[-4%] w-[108%] h-[108%] transition-opacity duration-700"
           style={{ opacity: baseAlpha }}
         >
           <img
-            src={`${baseUrl}monoio_arctic_aurora.jpg`}
-            alt="Photorealistic Nordic Arctic Aurora Lake"
+            src={`${baseUrl}aurora_mountain.jpg`}
+            alt="Photorealistic Aurora Mountain"
             className={`w-full h-full object-cover object-center transition-opacity duration-1000 ${
               baseLoaded ? 'opacity-100' : 'opacity-0'
             }`}
             onLoad={() => setBaseLoaded(true)}
           />
-          <div className="absolute inset-0 bg-gradient-to-t from-[#01030a]/80 via-transparent to-[#01030a]/40 pointer-events-none" />
+          <div className="absolute inset-0 bg-gradient-to-t from-[#01030a]/80 via-transparent to-[#01030a]/30 pointer-events-none" />
           <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,transparent_45%,rgba(1,3,10,0.75)_100%)] pointer-events-none" />
         </div>
 
@@ -802,7 +929,7 @@ export const WorldScene: React.FC<WorldSceneProps> = ({
         </div>
       </div>
 
-      {/* 2. THREE.JS RIGGED 3D CHARACTER & SPOTLIGHT SHADOW LAYER */}
+      {/* 2. THREE.JS RIGGED 3D CHARACTER, PATHWAY & SPOTLIGHT SHADOW LAYER */}
       <div
         ref={threeMountRef}
         className="absolute inset-0 w-full h-full pointer-events-none z-10"
@@ -814,9 +941,9 @@ export const WorldScene: React.FC<WorldSceneProps> = ({
         className="absolute inset-0 w-full h-full pointer-events-none z-20"
       />
 
-      {/* 4. LEFT VOID SHADOW GRADIENT (Preserves 100% WCAG AAA readability for docked cards) */}
+      {/* 4. RIGHT VOID SHADOW GRADIENT (Preserves 100% WCAG AAA readability for right-docked cards) */}
       <div
-        className="absolute inset-y-0 left-0 w-full sm:w-2/3 md:w-1/2 lg:w-5/12 bg-gradient-to-r from-[#01030a]/90 via-[#01030a]/50 to-transparent pointer-events-none z-30"
+        className="absolute inset-y-0 right-0 w-full sm:w-2/3 md:w-1/2 lg:w-5/12 bg-gradient-to-l from-[#01030a]/90 via-[#01030a]/50 to-transparent pointer-events-none z-30"
       />
     </div>
   );
