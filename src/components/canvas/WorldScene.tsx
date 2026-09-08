@@ -51,7 +51,6 @@ export const WorldScene: React.FC<WorldSceneProps> = ({
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
   const [baseLoaded, setBaseLoaded] = useState<boolean>(false);
-  const [summitLoaded, setSummitLoaded] = useState<boolean>(false);
   const [, setCharacterLoaded] = useState<boolean>(false);
 
   // Animation and physics state
@@ -123,7 +122,7 @@ export const WorldScene: React.FC<WorldSceneProps> = ({
     const scene = new THREE.Scene();
 
     const camera = new THREE.PerspectiveCamera(40, width / height, 0.1, 100);
-    // Camera positioned to frame the character on the LEFT third looking forward-right
+    // Camera positioned to frame the character on the LEFT third looking forward
     camera.position.set(-2.4, 1.4, 6.2);
 
     const renderer = new THREE.WebGLRenderer({
@@ -143,7 +142,7 @@ export const WorldScene: React.FC<WorldSceneProps> = ({
     mount.appendChild(renderer.domElement);
 
     // 2. Three.js SpotLight System (Overhead Left targeting the character on the left)
-    const spotLight = new THREE.SpotLight(0xe0f2fe, 36);
+    const spotLight = new THREE.SpotLight(0xe0f2fe, 38);
     spotLight.position.set(-3.6, 5.2, 3.2);
     spotLight.angle = Math.PI / 4.5;
     spotLight.penumbra = 0.85;       // Soft penumbra boundary
@@ -242,11 +241,6 @@ export const WorldScene: React.FC<WorldSceneProps> = ({
       metalness: 0.1,
       flatShading: true,
     });
-    const snowCapMat = new THREE.MeshStandardMaterial({
-      color: 0xe0f2fe,
-      roughness: 0.95,
-      metalness: 0.05,
-    });
 
     const rocksGroup = new THREE.Group();
     // Place stones along both borders of the path
@@ -321,7 +315,6 @@ export const WorldScene: React.FC<WorldSceneProps> = ({
         characterModel = gltf.scene;
         characterModel.scale.set(1.42, 1.42, 1.42);
         characterModel.position.set(-1.75, 0, 0);
-        characterModel.rotation.y = Math.PI * 0.15; // Angled forward-right into pass
 
         // Enable shadows across all skinned meshes and bones
         characterModel.traverse((child) => {
@@ -415,7 +408,9 @@ export const WorldScene: React.FC<WorldSceneProps> = ({
 
         characterModel.position.copy(currentPathPt);
         const lookTarget = currentPathPt.clone().add(tangent);
+        // Correct forward walking orientation: glTF models face forward when rotated 180° after lookAt
         characterModel.lookAt(lookTarget);
+        characterModel.rotateY(Math.PI);
 
         // Position ground shadow floor beneath character
         floor.position.set(currentPathPt.x, currentPathPt.y - 0.01, currentPathPt.z);
@@ -429,8 +424,12 @@ export const WorldScene: React.FC<WorldSceneProps> = ({
         );
 
         // Explorer headlamp projecting forward along the pathway
-        headlamp.position.set(currentPathPt.x, currentPathPt.y + 1.35, currentPathPt.z + 0.1);
-        headlamp.target.position.copy(lookTarget.clone().add(new THREE.Vector3(0, -0.6, 0)));
+        headlamp.position.set(currentPathPt.x, currentPathPt.y + 1.35, currentPathPt.z);
+        headlamp.target.position.set(
+          currentPathPt.x + tangent.x * 4.0,
+          currentPathPt.y + tangent.y * 4.0 - 0.6,
+          currentPathPt.z + tangent.z * 4.0
+        );
 
         // Camera smoothly tracks character with subtle mouse parallax
         camera.position.x = -2.4 + st.currentMouseX * 0.35;
@@ -452,7 +451,6 @@ export const WorldScene: React.FC<WorldSceneProps> = ({
       pathMat.dispose();
       rockGeo.dispose();
       rockMat.dispose();
-      snowCapMat.dispose();
       floorGeo.dispose();
       floorMat.dispose();
       if (mount.contains(renderer.domElement)) {
@@ -462,8 +460,8 @@ export const WorldScene: React.FC<WorldSceneProps> = ({
   }, [baseUrl]);
 
   // ============================================================================
-  // 2D CANVAS ATMOSPHERIC SHADERS & 3D BLIZZARD PARTICLES
-  // Living GLSL Aurora ribbons, lake water ripples, and velocity particles
+  // 2D CANVAS ATMOSPHERIC PARTICLES (Pure blizzard snow & shooting stars)
+  // Green line ribbons removed as requested
   // ============================================================================
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -517,7 +515,7 @@ export const WorldScene: React.FC<WorldSceneProps> = ({
       st.time += 0.016;
       const t = st.time;
 
-      // Smooth scroll lerp (buttery 60fps tracking)
+      // Smooth scroll lerp
       const prevProgress = st.currentProgress;
       st.currentProgress += (st.targetProgress - st.currentProgress) * 0.085;
       const p = Math.max(0, Math.min(1, st.currentProgress));
@@ -576,157 +574,56 @@ export const WorldScene: React.FC<WorldSceneProps> = ({
       ctx.clearRect(0, 0, W, H);
 
       /* ========================================================================
-         1. LIVING GLSL AURORA WAVE RIBBONS (Upper Sky)
+         1. INTERACTIVE WATER RIPPLES (Lower Mirror Lake)
       ======================================================================== */
-      const baseAlpha = Math.max(0, 1 - Math.max(0, (p - 0.70) / 0.22));
-      if (baseAlpha > 0.05) {
-        ctx.save();
-        ctx.globalCompositeOperation = 'screen';
+      ctx.save();
+      ctx.globalCompositeOperation = 'screen';
 
-        const drawAuroraRibbon = (
-          xStartFrac: number,
-          xEndFrac: number,
-          yBaseFrac: number,
-          waveAmp: number,
-          freq: number,
-          speed: number,
-          cTop: string,
-          cMid: string,
-          cBot: string,
-          alphaMod: number
-        ) => {
-          const x0 = W * xStartFrac;
-          const x1 = W * xEndFrac;
-          const width = x1 - x0;
-          const steps = 38;
-          const stepW = width / steps;
-          const yBase = H * yBaseFrac;
-
-          ctx.globalAlpha = baseAlpha * alphaMod;
-
-          for (let i = 0; i < steps; i++) {
-            const progressX = i / steps;
-            const x = x0 + i * stepW;
-
-            const wave =
-              Math.sin(progressX * freq + t * speed) * waveAmp +
-              Math.cos(progressX * freq * 1.8 - t * speed * 0.7) * (waveAmp * 0.4) +
-              Math.sin(t * speed * 1.4 + progressX * 4.0) * (waveAmp * 0.25);
-
-            const yTop = Math.max(0, yBase + wave - 35);
-            const yBottom = Math.min(H * 0.62, yBase + wave + H * 0.32);
-
-            const rayAlpha =
-              0.4 +
-              0.35 * Math.sin(progressX * 6 + t * 2.2) +
-              0.15 * Math.sin(t * 1.5 + progressX * 10);
-
-            const grad = ctx.createLinearGradient(x, yTop, x, yBottom);
-            grad.addColorStop(0.0, 'rgba(0,0,0,0)');
-            grad.addColorStop(0.12, cTop);
-            grad.addColorStop(0.48, cMid);
-            grad.addColorStop(0.85, cBot);
-            grad.addColorStop(1.0, 'rgba(0,0,0,0)');
-
-            ctx.fillStyle = grad;
-            ctx.globalAlpha = baseAlpha * alphaMod * Math.max(0.1, rayAlpha);
-            ctx.fillRect(x - stepW * 0.7, yTop, stepW * 1.4, yBottom - yTop);
-          }
-        };
-
-        // Primary Emerald Ribbon
-        drawAuroraRibbon(
-          0.15, 0.85,
-          0.06,
-          H * 0.08,
-          4.8, 1.2,
-          'rgba(168, 85, 247, 0.55)',
-          'rgba(52, 211, 153, 0.78)',
-          'rgba(56, 189, 248, 0.60)',
-          0.72
-        );
-
-        // Secondary Cyan Ribbon
-        drawAuroraRibbon(
-          0.30, 0.95,
-          0.12,
-          H * 0.06,
-          3.6, 0.85,
-          'rgba(244, 63, 94, 0.30)',
-          'rgba(34, 211, 238, 0.70)',
-          'rgba(16, 185, 129, 0.65)',
-          0.60
-        );
-
-        // Lake bloom reflection
-        const bloomY = H * 0.62;
-        const lakeBloom = ctx.createRadialGradient(
-          W * 0.55, bloomY + 45, 15,
-          W * 0.52, bloomY + 180, W * 0.45
-        );
-        lakeBloom.addColorStop(0, 'rgba(52, 211, 153, 0.28)');
-        lakeBloom.addColorStop(0.4, 'rgba(56, 189, 248, 0.18)');
-        lakeBloom.addColorStop(1, 'rgba(0, 0, 0, 0)');
-        ctx.fillStyle = lakeBloom;
-        ctx.globalAlpha = baseAlpha * 0.65;
-        ctx.fillRect(0, bloomY, W, H - bloomY);
-
-        ctx.restore();
-      }
-
-      /* ========================================================================
-         2. INTERACTIVE WATER RIPPLES (Lower Mirror Lake)
-      ======================================================================== */
-      if (baseAlpha > 0.1) {
-        ctx.save();
-        ctx.globalCompositeOperation = 'screen';
-
-        if (vel > 0.8 && Math.random() < 0.25) {
-          stateRef.current.ripples.push({
-            x: W * (0.3 + Math.random() * 0.5),
-            y: H * (0.64 + Math.random() * 0.32),
-            radius: 4,
-            maxRadius: 60 + Math.random() * 50,
-            alpha: 0.4,
-            speed: 1.2 + vel * 0.4,
-          });
-        }
-
-        st.ripples.forEach((r, idx) => {
-          r.radius += r.speed;
-          r.alpha *= 0.965;
-
-          if (r.alpha < 0.01 || r.radius >= r.maxRadius) {
-            st.ripples.splice(idx, 1);
-            return;
-          }
-
-          ctx.strokeStyle = `rgba(56, 189, 248, ${r.alpha * baseAlpha})`;
-          ctx.lineWidth = 1.2;
-          ctx.beginPath();
-          ctx.ellipse(r.x, r.y, r.radius * 2.2, r.radius * 0.45, 0, 0, Math.PI * 2);
-          ctx.stroke();
+      if (vel > 0.8 && Math.random() < 0.25) {
+        stateRef.current.ripples.push({
+          x: W * (0.3 + Math.random() * 0.5),
+          y: H * (0.64 + Math.random() * 0.32),
+          radius: 4,
+          maxRadius: 60 + Math.random() * 50,
+          alpha: 0.4,
+          speed: 1.2 + vel * 0.4,
         });
-
-        // Water glints
-        ctx.strokeStyle = 'rgba(56, 189, 248, 0.08)';
-        ctx.lineWidth = 0.8;
-        const waterTop = H * 0.62;
-        for (let ry = waterTop + 15; ry < H; ry += 24) {
-          const shiftX = Math.sin(ry * 0.05 + t * 1.6) * 16;
-          const spanW = W * (0.5 + 0.5 * ((ry - waterTop) / (H - waterTop)));
-          const cx = W * 0.55;
-          ctx.beginPath();
-          ctx.moveTo(cx - spanW * 0.4 + shiftX, ry);
-          ctx.lineTo(cx + spanW * 0.4 + shiftX * 0.5, ry);
-          ctx.stroke();
-        }
-
-        ctx.restore();
       }
 
+      st.ripples.forEach((r, idx) => {
+        r.radius += r.speed;
+        r.alpha *= 0.965;
+
+        if (r.alpha < 0.01 || r.radius >= r.maxRadius) {
+          st.ripples.splice(idx, 1);
+          return;
+        }
+
+        ctx.strokeStyle = `rgba(56, 189, 248, ${r.alpha})`;
+        ctx.lineWidth = 1.2;
+        ctx.beginPath();
+        ctx.ellipse(r.x, r.y, r.radius * 2.2, r.radius * 0.45, 0, 0, Math.PI * 2);
+        ctx.stroke();
+      });
+
+      // Subtle ambient water glints
+      ctx.strokeStyle = 'rgba(56, 189, 248, 0.08)';
+      ctx.lineWidth = 0.8;
+      const waterTop = H * 0.62;
+      for (let ry = waterTop + 15; ry < H; ry += 24) {
+        const shiftX = Math.sin(ry * 0.05 + t * 1.6) * 16;
+        const spanW = W * (0.5 + 0.5 * ((ry - waterTop) / (H - waterTop)));
+        const cx = W * 0.55;
+        ctx.beginPath();
+        ctx.moveTo(cx - spanW * 0.4 + shiftX, ry);
+        ctx.lineTo(cx + spanW * 0.4 + shiftX * 0.5, ry);
+        ctx.stroke();
+      }
+
+      ctx.restore();
+
       /* ========================================================================
-         3. CELESTIAL SHOOTING STARS
+         2. CELESTIAL SHOOTING STARS
       ======================================================================== */
       if (Math.random() < 0.007) {
         const idle = st.shooters.find((s) => !s.active);
@@ -771,7 +668,7 @@ export const WorldScene: React.FC<WorldSceneProps> = ({
       });
 
       /* ========================================================================
-         4. 3D BLIZZARD SNOW PARTICLES (Velocity Acceleration)
+         3. 3D BLIZZARD SNOW PARTICLES (Velocity Acceleration)
       ======================================================================== */
       ctx.save();
       ctx.globalCompositeOperation = 'lighter';
@@ -836,37 +733,6 @@ export const WorldScene: React.FC<WorldSceneProps> = ({
 
       ctx.restore();
 
-      /* ========================================================================
-         5. SUMMIT BEACON LENS FLARE GLOW (Apex @ 100%)
-      ======================================================================== */
-      const summitAlpha = Math.min(1, Math.max(0, (p - 0.72) / 0.20));
-      if (summitAlpha > 0.05) {
-        ctx.save();
-        ctx.globalCompositeOperation = 'screen';
-
-        const beaconX = W * 0.547;
-        const beaconY = H * 0.448;
-        const pulse = 1.0 + 0.18 * Math.sin(t * 3.5);
-        const beaconRadius = 45 * pulse;
-
-        const beaconGlow = ctx.createRadialGradient(
-          beaconX, beaconY, 2,
-          beaconX, beaconY, beaconRadius
-        );
-        beaconGlow.addColorStop(0, 'rgba(255, 235, 150, 0.95)');
-        beaconGlow.addColorStop(0.25, 'rgba(245, 158, 11, 0.55)');
-        beaconGlow.addColorStop(0.65, 'rgba(217, 119, 6, 0.20)');
-        beaconGlow.addColorStop(1, 'rgba(0, 0, 0, 0)');
-
-        ctx.fillStyle = beaconGlow;
-        ctx.globalAlpha = summitAlpha * 0.85;
-        ctx.beginPath();
-        ctx.arc(beaconX, beaconY, beaconRadius, 0, Math.PI * 2);
-        ctx.fill();
-
-        ctx.restore();
-      }
-
       animId = requestAnimationFrame(render);
     };
 
@@ -878,14 +744,10 @@ export const WorldScene: React.FC<WorldSceneProps> = ({
     };
   }, [onCheckpointTrigger]);
 
-  // Plate opacities for continuous elevation ascent
-  const baseAlpha = Math.max(0, 1 - Math.max(0, (scrollProgress - 0.70) / 0.20));
-  const summitAlpha = Math.min(1, Math.max(0, (scrollProgress - 0.72) / 0.20));
-
   return (
     <div className="fixed inset-0 w-full h-full overflow-hidden select-none pointer-events-none bg-[#01030a] z-0">
       
-      {/* 1. PHOTOREALISTIC AURORA MOUNTAIN BACKDROP STAGE */}
+      {/* 1. SINGLE UNIFIED 8K PHOTOREALISTIC AURORA MOUNTAIN PLATE (Consistent throughout entire scroll) */}
       <div
         ref={containerRef}
         className="absolute inset-0 w-full h-full will-change-transform"
@@ -894,11 +756,7 @@ export const WorldScene: React.FC<WorldSceneProps> = ({
           transition: 'transform 0.12s cubic-bezier(0.16, 1, 0.3, 1)',
         }}
       >
-        {/* Baseplate: 8K Photorealistic Aurora Mountain */}
-        <div
-          className="absolute inset-[-4%] w-[108%] h-[108%] transition-opacity duration-700"
-          style={{ opacity: baseAlpha }}
-        >
+        <div className="absolute inset-[-4%] w-[108%] h-[108%]">
           <img
             src={`${baseUrl}aurora_mountain.jpg`}
             alt="Photorealistic Aurora Mountain"
@@ -910,32 +768,15 @@ export const WorldScene: React.FC<WorldSceneProps> = ({
           <div className="absolute inset-0 bg-gradient-to-t from-[#01030a]/80 via-transparent to-[#01030a]/30 pointer-events-none" />
           <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,transparent_45%,rgba(1,3,10,0.75)_100%)] pointer-events-none" />
         </div>
-
-        {/* Summit Plate: 8K Photorealistic Mountain Summit Apex Beacon */}
-        <div
-          className="absolute inset-[-4%] w-[108%] h-[108%] transition-opacity duration-700"
-          style={{ opacity: summitAlpha }}
-        >
-          <img
-            src={`${baseUrl}monoio_summit_beacon.jpg`}
-            alt="Photorealistic Mountain Summit Beacon"
-            className={`w-full h-full object-cover object-center transition-opacity duration-1000 ${
-              summitLoaded ? 'opacity-100' : 'opacity-0'
-            }`}
-            onLoad={() => setSummitLoaded(true)}
-          />
-          <div className="absolute inset-0 bg-gradient-to-t from-[#01030a]/85 via-transparent to-[#01030a]/50 pointer-events-none" />
-          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,transparent_40%,rgba(1,3,10,0.8)_100%)] pointer-events-none" />
-        </div>
       </div>
 
-      {/* 2. THREE.JS RIGGED 3D CHARACTER, PATHWAY & SPOTLIGHT SHADOW LAYER */}
+      {/* 2. THREE.JS RIGGED 3D CHARACTER, PATHWAY & SPOTLIGHT SHADOW LAYER (Left Side) */}
       <div
         ref={threeMountRef}
         className="absolute inset-0 w-full h-full pointer-events-none z-10"
       />
 
-      {/* 3. DYNAMIC ATMOSPHERIC SHADER & BLIZZARD CANVAS */}
+      {/* 3. DYNAMIC ATMOSPHERIC PARTICLES CANVAS (Pure Blizzard Snow & Stars) */}
       <canvas
         ref={canvasRef}
         className="absolute inset-0 w-full h-full pointer-events-none z-20"
