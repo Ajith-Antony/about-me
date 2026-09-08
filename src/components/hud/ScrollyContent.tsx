@@ -7,7 +7,6 @@ import {
   Tent,
   Eye,
   Radio,
-  Sparkles,
   Award,
   Mail,
   Phone,
@@ -37,11 +36,7 @@ export const ScrollyContent: React.FC<ScrollyContentProps> = ({
   const [selectedExpId, setSelectedExpId] = useState<string>('boli');
   const [copied, setCopied] = useState<boolean>(false);
 
-  // 0: Hero (0.00 - 0.15)
-  // 1: Skills (0.16 - 0.40)
-  // 2: Experience (0.41 - 0.70)
-  // 3: Philosophy & Education (0.71 - 0.88)
-  // 4: Summit Contact (0.89 - 1.00)
+  // Active section calculation based on scroll progression along the trail
   let activeSection = 0;
   if (scrollProgress >= 0.88) activeSection = 4;
   else if (scrollProgress >= 0.68) activeSection = 3;
@@ -53,15 +48,15 @@ export const ScrollyContent: React.FC<ScrollyContentProps> = ({
     setCopied(true);
     try {
       confetti({
-        particleCount: 65,
-        spread: 60,
-        origin: { y: 0.6 },
-        colors: ['#38bdf8', '#a855f7', '#34d399', '#facc15'],
+        particleCount: 50,
+        spread: 55,
+        origin: { y: 0.65 },
+        colors: ['#38bdf8', '#7dd3fc', '#ffffff', '#34d399'],
       });
     } catch {
       // fallback
     }
-    setTimeout(() => setCopied(false), 2500);
+    setTimeout(() => setCopied(false), 2400);
   };
 
   const skillCategories = [
@@ -75,7 +70,7 @@ export const ScrollyContent: React.FC<ScrollyContentProps> = ({
         { name: 'TradingView & Lightweight Charts', level: 95 },
         { name: 'Redux Toolkit / Saga & State Isolation', level: 94 },
         { name: 'Ag-Grid & High-Frequency Tables', level: 92 },
-        { name: 'Tailwind CSS & Modern Design Systems', level: 96 },
+        { name: 'Tailwind CSS & Design Systems', level: 96 },
       ],
     },
     {
@@ -93,7 +88,7 @@ export const ScrollyContent: React.FC<ScrollyContentProps> = ({
       name: 'Web3 & Security',
       icon: ShieldCheck,
       skills: [
-        { name: 'Shufti KYC Pipeline Verification', level: 96 },
+        { name: 'Shufti KYC Identity Pipeline Verification', level: 96 },
         { name: 'EVM Wallet Connectivity (MetaMask/WalletConnect)', level: 94 },
         { name: 'NFT Marketplace & DEX Architecture', level: 92 },
         { name: 'Multi-Gateway Payment Integration', level: 92 },
@@ -189,12 +184,12 @@ export const ScrollyContent: React.FC<ScrollyContentProps> = ({
 
   return (
     <div className="absolute inset-0 pointer-events-none z-10 flex items-center p-4 sm:p-8 md:p-12 lg:p-16 max-w-7xl mx-auto">
-      <div className="w-full max-w-2xl">
+      <div className="w-full max-w-xl">
         
-        {/* CHECKPOINT 1: SKILLS */}
+        {/* CHECKPOINT 1: SKILLS SIGNPOST (25%) */}
         {activeSection === 1 && (
-          <div className="pointer-events-auto glass-panel-glow p-6 sm:p-8 rounded-3xl border border-sky-400/30 text-slate-100 shadow-2xl animate-in fade-in zoom-in-95 duration-300 space-y-5">
-            <div className="flex items-center justify-between border-b border-white/10 pb-4">
+          <div className="pointer-events-auto glass-panel-glow p-6 sm:p-7 rounded-3xl border border-sky-400/30 text-slate-100 shadow-2xl space-y-4 transition-all duration-300">
+            <div className="flex items-center justify-between border-b border-white/10 pb-3.5">
               <div className="flex items-center gap-3">
                 <div className="w-9 h-9 rounded-xl bg-sky-500/20 border border-sky-400/40 flex items-center justify-center text-sky-400">
                   <Layers className="w-5 h-5" />
@@ -203,10 +198,10 @@ export const ScrollyContent: React.FC<ScrollyContentProps> = ({
                   <div className="flex items-center gap-2">
                     <h2 className="text-lg font-bold text-white tracking-tight">The Signpost of Mastery</h2>
                     <span className="text-[10px] px-2 py-0.5 rounded-full bg-sky-500/20 text-sky-300 font-mono border border-sky-500/30 font-bold">
-                      25% EXPEDITION
+                      25% ELEV
                     </span>
                   </div>
-                  <p className="text-xs text-slate-400">Technical Arsenal & Core Stack</p>
+                  <p className="text-xs text-slate-400 font-mono">Core Technical Stack & Engineering Competencies</p>
                 </div>
               </div>
             </div>
@@ -219,7 +214,7 @@ export const ScrollyContent: React.FC<ScrollyContentProps> = ({
                   <button
                     key={cat.name}
                     onClick={() => setSkillTab(idx)}
-                    className={`px-3 py-1.5 rounded-xl text-xs font-mono tracking-wider transition-all flex items-center gap-1.5 border ${
+                    className={`px-3 py-1.5 rounded-xl text-xs font-mono tracking-wide transition-all flex items-center gap-1.5 border active:scale-95 ${
                       skillTab === idx
                         ? 'bg-sky-500/25 border-sky-400 text-white font-bold shadow-md'
                         : 'bg-slate-900/60 border-white/10 text-slate-400 hover:text-slate-200'
@@ -233,9 +228,9 @@ export const ScrollyContent: React.FC<ScrollyContentProps> = ({
             </div>
 
             {/* Skill Bars List */}
-            <div className="space-y-2.5 max-h-[36vh] overflow-y-auto pr-1">
+            <div className="space-y-2 max-h-[38vh] overflow-y-auto pr-1">
               {skillCategories[skillTab].skills.map((s) => (
-                <div key={s.name} className="p-2.5 rounded-xl bg-slate-950/60 border border-white/5 space-y-1.5">
+                <div key={s.name} className="p-2.5 rounded-xl bg-slate-950/70 border border-white/5 space-y-1.5">
                   <div className="flex items-center justify-between text-xs font-medium text-slate-200">
                     <span>{s.name}</span>
                     <span className="font-mono text-sky-400 font-bold">{s.level}%</span>
@@ -252,22 +247,22 @@ export const ScrollyContent: React.FC<ScrollyContentProps> = ({
           </div>
         )}
 
-        {/* CHECKPOINT 2: EXPERIENCE */}
+        {/* CHECKPOINT 2: EXPERIENCE CAMPSITE (55%) */}
         {activeSection === 2 && (
-          <div className="pointer-events-auto glass-panel-glow p-6 sm:p-8 rounded-3xl border border-amber-400/30 text-slate-100 shadow-2xl animate-in fade-in zoom-in-95 duration-300 space-y-5">
-            <div className="flex items-center justify-between border-b border-white/10 pb-4">
+          <div className="pointer-events-auto glass-panel-glow p-6 sm:p-7 rounded-3xl border border-sky-400/30 text-slate-100 shadow-2xl space-y-4 transition-all duration-300">
+            <div className="flex items-center justify-between border-b border-white/10 pb-3.5">
               <div className="flex items-center gap-3">
-                <div className="w-9 h-9 rounded-xl bg-amber-500/20 border border-amber-400/40 flex items-center justify-center text-amber-400">
+                <div className="w-9 h-9 rounded-xl bg-sky-500/20 border border-sky-400/40 flex items-center justify-center text-sky-400">
                   <Tent className="w-5 h-5" />
                 </div>
                 <div>
                   <div className="flex items-center gap-2">
-                    <h2 className="text-lg font-bold text-white tracking-tight">The Expedition Campsite</h2>
-                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 font-mono border border-amber-500/30 font-bold">
-                      55% EXPEDITION
+                    <h2 className="text-lg font-bold text-white tracking-tight">The Mountain Shelter</h2>
+                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-sky-500/20 text-sky-300 font-mono border border-sky-500/30 font-bold">
+                      55% ELEV
                     </span>
                   </div>
-                  <p className="text-xs text-slate-400">Journey & Impact Quest Log</p>
+                  <p className="text-xs text-slate-400 font-mono">Journey & Impact Quest Log</p>
                 </div>
               </div>
             </div>
@@ -278,9 +273,9 @@ export const ScrollyContent: React.FC<ScrollyContentProps> = ({
                 <button
                   key={exp.id}
                   onClick={() => setSelectedExpId(exp.id)}
-                  className={`px-3 py-1.5 rounded-xl text-xs font-mono whitespace-nowrap transition-all border ${
+                  className={`px-3 py-1.5 rounded-xl text-xs font-mono whitespace-nowrap transition-all border active:scale-95 ${
                     selectedExp.id === exp.id
-                      ? 'bg-amber-500/20 border-amber-400 text-white font-bold shadow-md'
+                      ? 'bg-sky-500/25 border-sky-400 text-white font-bold shadow-md'
                       : 'bg-slate-900/60 border-white/10 text-slate-400 hover:text-slate-200'
                   }`}
                 >
@@ -290,23 +285,23 @@ export const ScrollyContent: React.FC<ScrollyContentProps> = ({
             </div>
 
             {/* Selected Role Detail */}
-            <div className="space-y-3.5 bg-slate-950/60 p-4 rounded-2xl border border-white/5 max-h-[38vh] overflow-y-auto">
+            <div className="space-y-3 bg-slate-950/70 p-4 rounded-2xl border border-white/5 max-h-[40vh] overflow-y-auto">
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <div>
                   <h3 className="text-base font-extrabold text-white">
-                    {selectedExp.role} <span className="text-amber-400">@ {selectedExp.company}</span>
+                    {selectedExp.role} <span className="text-sky-400">@ {selectedExp.company}</span>
                   </h3>
                   <p className="text-xs font-mono text-slate-400">{selectedExp.period}</p>
                 </div>
-                <span className="px-2.5 py-0.5 rounded-md bg-amber-500/20 text-amber-300 font-mono text-[10px] font-bold border border-amber-500/30">
+                <span className="px-2.5 py-0.5 rounded-md bg-sky-500/20 text-sky-300 font-mono text-[10px] font-bold border border-sky-500/30">
                   {selectedExp.badge}
                 </span>
               </div>
 
               {selectedExp.metric && (
-                <div className="p-2.5 rounded-xl bg-gradient-to-r from-amber-950/40 to-sky-950/40 border border-amber-500/30 flex items-center gap-2 text-xs font-semibold text-slate-200">
-                  <Award className="w-4 h-4 text-amber-400 shrink-0" />
-                  <span>Key Result: <strong className="text-amber-300">{selectedExp.metric}</strong></span>
+                <div className="p-2.5 rounded-xl bg-sky-950/40 border border-sky-500/30 flex items-center gap-2 text-xs font-semibold text-slate-200">
+                  <Award className="w-4 h-4 text-sky-400 shrink-0" />
+                  <span>Impact: <strong className="text-sky-300">{selectedExp.metric}</strong></span>
                 </div>
               )}
 
@@ -317,7 +312,7 @@ export const ScrollyContent: React.FC<ScrollyContentProps> = ({
               <ul className="space-y-1.5 text-xs text-slate-200">
                 {selectedExp.highlights.map((h, i) => (
                   <li key={i} className="flex items-start gap-2">
-                    <span className="w-1.5 h-1.5 rounded-full bg-amber-400 mt-1.5 shrink-0" />
+                    <span className="w-1.5 h-1.5 rounded-full bg-sky-400 mt-1.5 shrink-0" />
                     <span>{h}</span>
                   </li>
                 ))}
@@ -334,30 +329,30 @@ export const ScrollyContent: React.FC<ScrollyContentProps> = ({
           </div>
         )}
 
-        {/* CHECKPOINT 3: PHILOSOPHY */}
+        {/* CHECKPOINT 3: ANCIENT OBSERVATORY (80%) */}
         {activeSection === 3 && (
-          <div className="pointer-events-auto glass-panel-glow p-6 sm:p-8 rounded-3xl border border-purple-400/30 text-slate-100 shadow-2xl animate-in fade-in zoom-in-95 duration-300 space-y-5">
-            <div className="flex items-center justify-between border-b border-white/10 pb-4">
+          <div className="pointer-events-auto glass-panel-glow p-6 sm:p-7 rounded-3xl border border-sky-400/30 text-slate-100 shadow-2xl space-y-4 transition-all duration-300">
+            <div className="flex items-center justify-between border-b border-white/10 pb-3.5">
               <div className="flex items-center gap-3">
-                <div className="w-9 h-9 rounded-xl bg-purple-500/20 border border-purple-400/40 flex items-center justify-center text-purple-400">
+                <div className="w-9 h-9 rounded-xl bg-sky-500/20 border border-sky-400/40 flex items-center justify-center text-sky-400">
                   <Eye className="w-5 h-5" />
                 </div>
                 <div>
                   <div className="flex items-center gap-2">
                     <h2 className="text-lg font-bold text-white tracking-tight">The Ancient Observatory</h2>
-                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-purple-500/20 text-purple-300 font-mono border border-purple-500/30 font-bold">
-                      80% EXPEDITION
+                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-sky-500/20 text-sky-300 font-mono border border-sky-500/30 font-bold">
+                      80% ELEV
                     </span>
                   </div>
-                  <p className="text-xs text-slate-400">Academic Roots & Engineering Philosophy</p>
+                  <p className="text-xs text-slate-400 font-mono">Academic Credentials & Core Pillars</p>
                 </div>
               </div>
             </div>
 
             {/* Academic Degree */}
-            <div className="p-4 rounded-2xl bg-slate-950/70 border border-purple-500/30 flex items-center justify-between gap-3">
+            <div className="p-4 rounded-2xl bg-slate-950/70 border border-sky-500/30 flex items-center justify-between gap-3">
               <div className="space-y-1">
-                <div className="flex items-center gap-2 text-xs font-mono text-purple-400 font-bold uppercase">
+                <div className="flex items-center gap-2 text-xs font-mono text-sky-400 font-bold uppercase">
                   <GraduationCap className="w-4 h-4" />
                   <span>Computer Science & Engineering</span>
                 </div>
@@ -369,25 +364,25 @@ export const ScrollyContent: React.FC<ScrollyContentProps> = ({
             </div>
 
             {/* Three Pillars */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-              <div className="p-3.5 rounded-xl bg-slate-950/60 border border-white/10 space-y-1.5">
-                <Zap className="w-4 h-4 text-purple-400" />
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+              <div className="p-3 rounded-xl bg-slate-950/70 border border-white/10 space-y-1">
+                <Zap className="w-4 h-4 text-sky-400" />
                 <h4 className="text-xs font-bold text-white">Performance-First</h4>
                 <p className="text-[11px] text-slate-300 leading-relaxed">
                   Zero-lag mindset for real-time high-throughput financial trading systems.
                 </p>
               </div>
 
-              <div className="p-3.5 rounded-xl bg-slate-950/60 border border-white/10 space-y-1.5">
-                <Shield className="w-4 h-4 text-purple-400" />
+              <div className="p-3 rounded-xl bg-slate-950/70 border border-white/10 space-y-1">
+                <Shield className="w-4 h-4 text-sky-400" />
                 <h4 className="text-xs font-bold text-white">Clean Engineering</h4>
                 <p className="text-[11px] text-slate-300 leading-relaxed">
                   Pragmatic, maintainable TypeScript architecture over premature complexity.
                 </p>
               </div>
 
-              <div className="p-3.5 rounded-xl bg-slate-950/60 border border-white/10 space-y-1.5">
-                <Target className="w-4 h-4 text-purple-400" />
+              <div className="p-3 rounded-xl bg-slate-950/70 border border-white/10 space-y-1">
+                <Target className="w-4 h-4 text-sky-400" />
                 <h4 className="text-xs font-bold text-white">Ownership</h4>
                 <p className="text-[11px] text-slate-300 leading-relaxed">
                   Full product lifecycle delivery in fast-moving engineering teams.
@@ -397,22 +392,22 @@ export const ScrollyContent: React.FC<ScrollyContentProps> = ({
           </div>
         )}
 
-        {/* CHECKPOINT 4: CONTACT */}
+        {/* CHECKPOINT 4: SUMMIT BEACON (100%) */}
         {activeSection === 4 && (
-          <div className="pointer-events-auto glass-panel-glow p-6 sm:p-8 rounded-3xl border border-yellow-400/30 text-slate-100 shadow-2xl animate-in fade-in zoom-in-95 duration-300 space-y-5">
-            <div className="flex items-center justify-between border-b border-white/10 pb-4">
+          <div className="pointer-events-auto glass-panel-glow p-6 sm:p-7 rounded-3xl border border-sky-400/30 text-slate-100 shadow-2xl space-y-4 transition-all duration-300">
+            <div className="flex items-center justify-between border-b border-white/10 pb-3.5">
               <div className="flex items-center gap-3">
-                <div className="w-9 h-9 rounded-xl bg-yellow-500/20 border border-yellow-400/40 flex items-center justify-center text-yellow-400">
+                <div className="w-9 h-9 rounded-xl bg-sky-500/20 border border-sky-400/40 flex items-center justify-center text-sky-400">
                   <Radio className="w-5 h-5 animate-pulse" />
                 </div>
                 <div>
                   <div className="flex items-center gap-2">
                     <h2 className="text-lg font-bold text-white tracking-tight">The Summit Beacon</h2>
-                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-yellow-500/20 text-yellow-300 font-mono border border-yellow-500/30 font-bold">
+                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-sky-500/20 text-sky-300 font-mono border border-sky-500/30 font-bold">
                       SUMMIT PEAK • 100%
                     </span>
                   </div>
-                  <p className="text-xs text-slate-400">Summit Transmission Terminal • Open for Opportunities</p>
+                  <p className="text-xs text-slate-400 font-mono">Transmission Terminal • Open for Opportunities</p>
                 </div>
               </div>
             </div>
@@ -462,7 +457,7 @@ export const ScrollyContent: React.FC<ScrollyContentProps> = ({
 
               <button
                 onClick={onOpenMessage}
-                className="py-2.5 px-4 rounded-xl bg-yellow-500 hover:bg-yellow-400 text-slate-950 text-xs font-bold flex items-center justify-center gap-2 transition-all hover:scale-[1.02] active:scale-95 shadow-lg shadow-yellow-500/20"
+                className="py-2.5 px-4 rounded-xl bg-sky-400 hover:bg-sky-300 text-slate-950 text-xs font-bold flex items-center justify-center gap-2 transition-all hover:scale-[1.02] active:scale-95 shadow-lg shadow-sky-400/20"
               >
                 <Send className="w-4 h-4" />
                 <span>Dispatch Message</span>
